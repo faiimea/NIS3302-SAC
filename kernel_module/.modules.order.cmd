@@ -1,0 +1,1 @@
+cmd_/home/faii/Downloads/fileaudit/kernel_module/modules.order := {   echo /home/faii/Downloads/fileaudit/kernel_module/AuditModule.ko; :; } | awk '!x[$$0]++' - > /home/faii/Downloads/fileaudit/kernel_module/modules.order

@@ -2,6 +2,7 @@
 #define _LARGEFILE64_SOURCE
 #endif
 
+#include <linux/uaccess.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -25,6 +26,9 @@ MODULE_DESCRIPTION("hook sys_call_table");
 
 
 typedef void (* demo_sys_call_ptr_t)(void);
+//asmlinkage 
+//pt_regs store the regs_info in stack
+//function pointer and the para is regs(pt_regs)
 typedef asmlinkage long (*orig_openat_t)(struct pt_regs *regs);
 typedef asmlinkage long (*orig_read_t)(struct pt_regs *regs);
 
@@ -47,17 +51,16 @@ pte_t *pte;
 
 asmlinkage long hacked_openat(struct pt_regs *regs)
 {
-
+	
 	long ret;
 	char buffer[PATH_MAX];
-        long nbytes;
+	unsigned long user_addr = regs->bx;
+    long nbytes;
 
-        // regs->bx --> buffer --> pathname --> fullname
-        printk("Buffer content1: %s\n", buffer);
-
+    // regs->bx --> buffer --> pathname --> fullname
   	nbytes=strncpy_from_user(buffer,(char*)regs->bx,PATH_MAX);
-  	printk("Buffer content2: %s\n", buffer);
-   	//printk("Info:   hooked sys_openat(), file name:%s(%ld bytes)",buffer,nbytes);
+  	//printk("Buffer content2: %s\n", buffer);
+   	if(nbytes!=-14){printk("Info:   hooked sys_openat(), file name:%s(%ld bytes)",buffer,nbytes);}
 
 
 	ret = orig_openat(regs);
@@ -73,13 +76,13 @@ asmlinkage long hacked_openat(struct pt_regs *regs)
 
 static int __init audit_init(void)
 {
-
+	
 	sys_call_table = get_syscall_table();
 	
 	printk("Info: sys_call_table found at %lx\n",(unsigned long)sys_call_table) ;
-
-        //Hook Sys Call Openat
-        //将sys_call_table中的openat系统调用的原始函数保存到orig_openat变量中。
+	// HERE!!!!
+    // Hook Sys Call Openat
+    // 将sys_call_table中的openat系统调用的原始函数保存到orig_openat变量中。
 	orig_openat = (orig_openat_t) sys_call_table[__NR_openat];
 	printk("Info:  orginal openat:%lx\n",(long)orig_openat);
 

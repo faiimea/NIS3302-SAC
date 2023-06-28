@@ -53,27 +53,19 @@ asmlinkage long hacked_openat(struct pt_regs *regs)
 {
 	
 	long ret;
-	char buffer[PATH_MAX];
+	char buffer_open[PATH_MAX];
     long nbytes;
+	unsigned long flag=regs->di;
 
-    // regs->bx --> buffer --> pathname --> fullname
-  	nbytes=strncpy_from_user(buffer,(char*)regs->si,PATH_MAX);
-	// char cwd[PATH_MAX];
-	// char path[PATH_MAX];
-	// getcwd(cwd,sizeof(cwd));
-	// fchdir(regs->bx);
-	// getcwd(path,sizeof(path));
-	// printk("Readable directory for dfd %lu: %s\n", regs->bx, path);
-	// chdir(cwd);
-	
-  	//printk("Buffer content2: %s\n", buffer);
-	if (strncmp(buffer, "/home/faii/Desktop/", strlen("/home/faii/Desktop/")) == 0) {
-   	printk("Info:   hooked sys_openat(), file name:%s(%ld bytes)",buffer,nbytes);}
-
-
+	// }-> pathname --> fullname
+  	nbytes=strncpy_from_user(buffer_open,(char*)regs->si,PATH_MAX);
+	//printk("Info:   hooked sys_openat(), file right:%lu",flag);
+	// if (strncmp(buffer, "/home/faii/Desktop/", strlen("/home/faii/Desktop/")) == 0) {
+   	// printk("Info:   hooked sys_openat(), file name:%s(%ld bytes)",buffer,nbytes);
+	// }
 	ret = orig_openat(regs);
 	//用于记录openat系统调用信息的函数
-	AuditOpenat(regs,buffer,ret);
+	AuditOpenat(regs,buffer_open,ret);
 
   	return ret;
 }
@@ -91,21 +83,24 @@ static int __init audit_init(void)
 	// HERE!!!!
     // Hook Sys Call Openat
     // 将sys_call_table中的openat系统调用的原始函数保存到orig_openat变量中。
+	// function address
 	orig_openat = (orig_openat_t) sys_call_table[__NR_openat];
 	printk("Info:  orginal openat:%lx\n",(long)orig_openat);
 
 	pte = lookup_address((unsigned long) sys_call_table, &level);
-        // 查找sys_call_table对应的页表项，并将其设置为可写。
-        set_pte_atomic(pte, pte_mkwrite(*pte));
-        printk("Info: Disable write-protection of page with sys_call_table\n");
+    // 查找sys_call_table对应的页表项，并将其设置为可写。
+    set_pte_atomic(pte, pte_mkwrite(*pte));
+    printk("Info: Disable write-protection of page with sys_call_table\n");
 	// 将sys_call_table中的openat系统调用的函数指针设置为指向钩子函数hacked_openat
-        sys_call_table[__NR_openat] = (demo_sys_call_ptr_t) hacked_openat;
+	// demo_sys_call_ptr_t is void* address
+    sys_call_table[__NR_openat] = (demo_sys_call_ptr_t) hacked_openat;
 	// 将页表项恢复为只读。
-        set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
-        printk("Info: sys_call_table hooked!\n");
+    set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
+    printk("Info: sys_call_table hooked!\n");
 	// 初始化一个用于通信的Netlink套接字。
-        netlink_init();
-        return 0;
+	// netlink is not my job :)
+    netlink_init();
+    return 0;
 }
 
 

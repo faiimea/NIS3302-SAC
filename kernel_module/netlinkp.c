@@ -8,7 +8,7 @@
 
 #define TASK_COMM_LEN 16
 #define NETLINK_TEST 29
-#define AUDITPATH "/home/TestAudit"
+#define AUDITPATH "/home/faii/Desktop/"
 #define MAX_LENGTH 256
 
 static u32 pid=0;
@@ -17,6 +17,7 @@ static struct sock *nl_sk = NULL;
 //发送netlink消息message
 int netlink_sendmsg(const void *buffer, unsigned int size)
 {
+    
 	struct sk_buff *skb;
 	struct nlmsghdr *nlh;
 	int len = NLMSG_SPACE(1200);
@@ -78,7 +79,13 @@ void get_fullname(const char *pathname,char *fullname)
 }
 
 
+// int Audit_Totoal(struct pt_regs * regs,char** pass_string ,int* pass_ret)
+// {
+//     AuditOpenat(regs,pass_string[1],pass_ret[1]);
+// }
+
 // 事件处理函数，用于处理文件打开操作。
+// AuditOpenat(regs,buffer,ret);
 int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)
 {
 //存储命令名称的commandname、完整路径名的fullname、消息缓冲区的大小size
@@ -106,8 +113,10 @@ int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)
     printk("Info: fullname is  %s \t; Auditpath is  %s \n",fullname,AUDITPATH);
 
 // 然后，它将当前进程的命令名称复制到commandname中。
+// current 是一个全局变量，它指向 task_struct 结构体，该结构体包含了与当前进程相关的信息。
     strncpy(commandname,current->comm,TASK_COMM_LEN);
-
+//16：表示用于存储用户ID、进程ID、regs->dx 和打开文件返回值的 4 个整数的总大小。每个整数占用 4 个字节，所以总共占用 16 个字节。
+//1：表示用于存储字符串结束符 \0 的一个字节。
     size = strlen(fullname) + 16 + TASK_COMM_LEN + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);

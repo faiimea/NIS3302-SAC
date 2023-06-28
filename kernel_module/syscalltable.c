@@ -12,9 +12,11 @@
 #include <linux/ctype.h>
 
 
-
+// address
 typedef void (* demo_sys_call_ptr_t)(void);
 
+
+// fixed --- DO NOT CHANGE !!
 static struct kprobe kp = {
    .symbol_name = "sys_call_table"
 };

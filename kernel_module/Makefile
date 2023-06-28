@@ -13,3 +13,9 @@ update:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 	sudo insmod AuditModule.ko
 	sudo dmesg
+build:
+	sudo dmesg -c
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
+	sudo insmod AuditModule.ko
+	sudo dmesg
+

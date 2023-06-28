@@ -54,13 +54,21 @@ asmlinkage long hacked_openat(struct pt_regs *regs)
 	
 	long ret;
 	char buffer[PATH_MAX];
-	unsigned long user_addr = regs->bx;
     long nbytes;
 
     // regs->bx --> buffer --> pathname --> fullname
-  	nbytes=strncpy_from_user(buffer,(char*)regs->bx,PATH_MAX);
+  	nbytes=strncpy_from_user(buffer,(char*)regs->si,PATH_MAX);
+	// char cwd[PATH_MAX];
+	// char path[PATH_MAX];
+	// getcwd(cwd,sizeof(cwd));
+	// fchdir(regs->bx);
+	// getcwd(path,sizeof(path));
+	// printk("Readable directory for dfd %lu: %s\n", regs->bx, path);
+	// chdir(cwd);
+	
   	//printk("Buffer content2: %s\n", buffer);
-   	if(nbytes!=-14){printk("Info:   hooked sys_openat(), file name:%s(%ld bytes)",buffer,nbytes);}
+	if (strncmp(buffer, "/home/faii/Desktop/", strlen("/home/faii/Desktop/")) == 0) {
+   	printk("Info:   hooked sys_openat(), file name:%s(%ld bytes)",buffer,nbytes);}
 
 
 	ret = orig_openat(regs);

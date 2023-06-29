@@ -5,6 +5,7 @@
 #include <linux/sched.h>
 #include <linux/fs_struct.h>
 #include <linux/limits.h>
+#include <linux/namei.h>
 
 #define TASK_COMM_LEN 16
 #define NETLINK_TEST 29

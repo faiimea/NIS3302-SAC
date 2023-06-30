@@ -1,0 +1,1 @@
+cmd_/home/innovation/Desktop/demo_reboot/AuditModule.o := ld -m elf_x86_64 -z noexecstack   -r -o /home/innovation/Desktop/demo_reboot/AuditModule.o @/home/innovation/Desktop/demo_reboot/AuditModule.mod 

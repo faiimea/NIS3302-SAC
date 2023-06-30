@@ -1,0 +1,1 @@
+cmd_/home/innovation/Desktop/demo_reboot/AuditModule.mod := printf '%s\n'   sdthook.o syscalltable.o netlinkp.o | awk '!x[$$0]++ { print("/home/innovation/Desktop/demo_reboot/"$$0) }' > /home/innovation/Desktop/demo_reboot/AuditModule.mod

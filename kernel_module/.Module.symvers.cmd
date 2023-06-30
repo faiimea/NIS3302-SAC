@@ -1,0 +1,1 @@
+cmd_/home/innovation/Desktop/demo_reboot/Module.symvers := sed 's/ko$$/o/' /home/innovation/Desktop/demo_reboot/modules.order | scripts/mod/modpost -m -a  -o /home/innovation/Desktop/demo_reboot/Module.symvers -e -i Module.symvers   -T -

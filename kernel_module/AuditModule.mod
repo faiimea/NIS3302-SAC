@@ -1,3 +1,3 @@
-/home/faii/Desktop/fileaudit/kernel_module/sdthook.o
-/home/faii/Desktop/fileaudit/kernel_module/syscalltable.o
-/home/faii/Desktop/fileaudit/kernel_module/netlinkp.o
+/home/innovation/Desktop/demo_reboot/sdthook.o
+/home/innovation/Desktop/demo_reboot/syscalltable.o
+/home/innovation/Desktop/demo_reboot/netlinkp.o

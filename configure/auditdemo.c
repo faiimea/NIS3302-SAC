@@ -49,7 +49,8 @@ void Log(char *commandname,int uid, int pid, char *file_path, int flags,int ret)
 	printf("%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
 }
 
-
+// Fixed , DONOT CHANGE
+// has no related to specific function
 void sendpid(unsigned int pid)
 {
 	//Send message to initialize

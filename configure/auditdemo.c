@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <linux/netlink.h>
 #include <linux/socket.h>
+#include <linux/unistd.h>
 #include <fcntl.h>
 #include <asm/types.h>
 #include <unistd.h>
@@ -92,6 +93,21 @@ void killdeal_func()
 	exit(0);
 }
 
+void Log_Open(struct nlmsghdr *nlh) {
+    unsigned int uid, pid, flags, ret;
+    char *file_path;
+    char *commandname;
+
+    uid = *(1+(unsigned int *)NLMSG_DATA(nlh));
+    pid = *(2 + (int *)NLMSG_DATA(nlh));
+    flags = *(3 + (int *)NLMSG_DATA(nlh));
+    ret = *(4 + (int *)NLMSG_DATA(nlh));
+    commandname = (char *)(5 + (int *)NLMSG_DATA(nlh));
+    file_path = (char *)(5 + 16 / 4 + (int *)NLMSG_DATA(nlh));
+
+    Log(commandname, uid, pid, file_path, flags, ret);
+}
+
 int main(int argc, char *argv[]){
 	char buff[110];
 	//void killdeal_func();
@@ -119,17 +135,17 @@ int main(int argc, char *argv[]){
 	}
 	//Loop to get message
 	while(1){	//Read message from kernel
-		unsigned int uid, pid,flags,ret;
-		char * file_path;
-		char * commandname;
+
 		recvmsg(sock_fd, &msg, 0);
-		uid = *( (unsigned int *)NLMSG_DATA(nlh) );
-        pid = *( 1 + (int *)NLMSG_DATA(nlh)  );
-        flags = *( 2 + (int *)NLMSG_DATA(nlh)  );
-        ret = *( 3 + (int *)NLMSG_DATA(nlh)  );
-        commandname = (char *)( 4 + (int *)NLMSG_DATA(nlh));
-        file_path = (char *)( 4 + 16/4 + (int *)NLMSG_DATA(nlh));
-        Log(commandname, uid,pid, file_path,flags,ret);
+		switch(*((unsigned int *)NLMSG_DATA(nlh))){
+			case __NR_openat:
+				Log_Open(nlh);
+				break;
+			case 114:
+				printf("?\n");
+				break;
+		}
+		
     }
 	close(sock_fd);
 	free(nlh);

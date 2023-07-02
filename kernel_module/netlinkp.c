@@ -156,19 +156,32 @@ int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)
     strncpy(commandname,current->comm,TASK_COMM_LEN);
 //16：表示用于存储用户ID、进程ID、regs->dx 和打开文件返回值的 4 个整数的总大小。每个整数占用 4 个字节，所以总共占用 16 个字节。
 //1：表示用于存储字符串结束符 \0 的一个字节。
-    size = strlen(fullname) + 16 + TASK_COMM_LEN + 1;
+    size = strlen(fullname) + 20 + TASK_COMM_LEN + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
 // 接着，它将当前进程的用户ID、进程ID、regs->dx和打开文件的返回值存储到buffer中。
     cred = current_cred();
-    *((int*)buffer) = cred->uid.val; ;  //uid
-    *((int*)buffer + 1) = current->pid;
-    *((int*)buffer + 2) = regs->dx; // regs->dx: mode for open file
-    *((int*)buffer + 3) = ret;
+    *((int*)buffer)=__NR_openat;
+    *((int*)buffer+1) = cred->uid.val; ;  //uid
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = regs->dx; // regs->dx: mode for open file
+    *((int*)buffer + 4) = ret;
 //最后，将commandname和fullname添加到buffer中，并调用netlink_sendmsg函数发送netlink消息。
-    strcpy( (char*)( 4 + (int*)buffer ), commandname);
-    strcpy( (char*)( 4 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
+    strcpy( (char*)( 5 + (int*)buffer ), commandname);
+    strcpy( (char*)( 5 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
 
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
+int AuditReboot(struct pt_regs * regs,int ret)
+{
+    unsigned int size;   
+    void * buffer; 
+    size = 4;
+    buffer = kmalloc(size, 0);
+    memset(buffer, 0, size);
+    *((int*)buffer) = 114;
     netlink_sendmsg(buffer, size);
     return 0;
 }

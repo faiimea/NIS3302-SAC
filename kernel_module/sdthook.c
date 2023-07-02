@@ -96,10 +96,11 @@ asmlinkage long hacked_reboot(struct pt_regs *regs) {
   long ret=0;
   printk("FAIINFO:HERE REBOOT!!!");
   add_line_to_file("/home/faii/Desktop/a.txt", "now reboot");
-  //ret=orig_reboot(regs);
+  ret=orig_reboot(regs);
   return ret;
 
 }
+
 
 static int __init audit_init(void) {
 

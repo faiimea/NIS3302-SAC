@@ -9,7 +9,7 @@
 
 #define TASK_COMM_LEN 16
 #define NETLINK_TEST 29
-#define AUDITPATH "/home/faii/Desktop/"
+#define AUDITPATH "/home/innovation/Desktop/"
 #define MAX_LENGTH 256
 
 static u32 pid=0;
@@ -125,6 +125,8 @@ void get_fullname(const char *pathname,char *fullname)
 
 // 事件处理函数，用于处理文件打开操作。
 // AuditOpenat(regs,buffer,ret);
+
+
 int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)
 {
 //存储命令名称的commandname、完整路径名的fullname、消息缓冲区的大小size
@@ -170,6 +172,37 @@ int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)
     strcpy( (char*)( 5 + (int*)buffer ), commandname);
     strcpy( (char*)( 5 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
 
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
+int Auditfinitmodule(char * pathname)
+{
+    unsigned int size; 
+    void * buffer; // = kmalloc(size, 0);
+    
+    size = strlen(pathname) + 4 + 1;
+    buffer = kmalloc(size, 0);
+    memset(buffer, 0, size);
+
+    *((int*)buffer)=__NR_finit_module;
+    strcpy( (char*)( 1 + (int*)buffer ), pathname);
+
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
+int Auditdeletemodule(char * modulename){
+    unsigned int size; 
+    void * buffer; // = kmalloc(size, 0);
+    
+    size = strlen(modulename) + 4 + 1;
+    buffer = kmalloc(size, 0);
+    memset(buffer, 0, size);
+    
+    *((int*)buffer)=__NR_delete_module;
+    strcpy( (char*)( 1 + (int*)buffer ), modulename);
+    
     netlink_sendmsg(buffer, size);
     return 0;
 }

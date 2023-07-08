@@ -4,6 +4,7 @@
         "kernel.h": "c",
         "unistd.h": "c",
         "array": "c",
+<<<<<<< HEAD
         "string_view": "c",
         "initializer_list": "c",
         "utility": "c",
@@ -11,6 +12,16 @@
         "functional": "c",
         "tuple": "c",
         "type_traits": "c"
+=======
+        "compare": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "random": "c"
+>>>>>>> 6598bea1ccdf3d51cd4ef117c399fe704f4382f0
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

@@ -212,6 +212,7 @@ void PreLog(struct nlmsghdr *nlh) {
 	switch(op){
 		case __NR_openat:
     		Log_Open(op,commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
+<<<<<<< HEAD
 			printf("open\n");
 			break;
 		case __NR_connect:
@@ -221,12 +222,23 @@ void PreLog(struct nlmsghdr *nlh) {
 		case __NR_socket:
 			Log_Socket(commandname, uid, pid, arg1 , arg2 , arg3 ,ret);
 			printf("socket\n");
+=======
+			break;
+		case __NR_connect:
+			Log_Connect(commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
+			break;
+		case __NR_socket:
+			Log_Socket(commandname, uid, pid, arg1 , arg2 , arg3 ,ret);
+>>>>>>> 6598bea1ccdf3d51cd4ef117c399fe704f4382f0
 			break;
 		case __NR_execve:
 		case __NR_unlinkat:
 			Log_file(op,commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
+<<<<<<< HEAD
 			printf("file\n");
 			break;
+=======
+>>>>>>> 6598bea1ccdf3d51cd4ef117c399fe704f4382f0
 	}
 }
 

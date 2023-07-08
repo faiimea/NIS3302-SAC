@@ -2,7 +2,16 @@
     "files.associations": {
         "init.h": "c",
         "kernel.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "array": "c",
+        "compare": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "random": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

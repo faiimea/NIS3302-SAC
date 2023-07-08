@@ -28,7 +28,7 @@ struct iovec iov;
 
 FILE *logfile;
 
-void Log_Open(char *commandname,int uid, int pid, char *file_path, int flags,int ret)
+void Log_Open(int operation,char *commandname,int uid, int pid, char *file_path, int arg1,int arg2,int arg3,int ret)
 {
 	char logtime[64];
 	char username[32];
@@ -37,9 +37,9 @@ void Log_Open(char *commandname,int uid, int pid, char *file_path, int flags,int
 	char opentype[16];
 	if (ret > 0) strcpy(openresult,"success");
 	else strcpy(openresult,"failed");
-	if (flags & O_RDONLY ) strcpy(opentype, "Read");
-	else if (flags & O_WRONLY ) strcpy(opentype, "Write");
-	else if (flags & O_RDWR ) strcpy(opentype, "Read/Write");
+	if (arg3 & O_RDONLY ) strcpy(opentype, "Read");
+	else if (arg3 & O_WRONLY ) strcpy(opentype, "Write");
+	else if (arg3 & O_RDWR ) strcpy(opentype, "Read/Write");
 	else strcpy(opentype,"other");
 
 	time_t t=time(0);
@@ -52,40 +52,7 @@ void Log_Open(char *commandname,int uid, int pid, char *file_path, int flags,int
 	printf("%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
 }
 
-void Log_Connect(int port_int, int ip_int, const char *netbuf, int ret) {
-    char logtime[64];
-    char username[32];
-    struct passwd *pwinfo;
-    char connectresult[10];
-    char ip[INET_ADDRSTRLEN];
-    int port;
-    
-    if (ret == 0)
-        strcpy(connectresult, "success");
-    else
-        strcpy(connectresult, "failed");
-
-    unsigned char bytes[4];
-    bytes[0] = ip_int & 0xFF;
-    bytes[1] = (ip_int >> 8) & 0xFF;
-    bytes[2] = (ip_int >> 16) & 0xFF;
-    bytes[3] = (ip_int >> 24) & 0xFF;
-
-	printf("ip=%s\n",bytes);
-    snprintf(ip, 4, "%u.%u.%u.%u", bytes[0], bytes[1], bytes[2], bytes[3]);
-
-    time_t t = time(0);
-    if (logfile == NULL)
-        return;
-    //pwinfo = getpwuid(uid);
-    //strcpy(username, pwinfo->pw_name);
-
-    strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
-    fprintf(logfile, "%s() %s() %s %s:%d %s\n", username, "connect", logtime, ip, port, connectresult);
-    printf("%s() %s() %s %s:%d %s\n", username, "connect", logtime, ip, port, connectresult);
-}
-
-void Log_file(int operation, char *commandname,int uid, int pid, char *file_path, int flags,int ret)
+void Log_file(int operation, char *commandname,int uid, int pid, char *file_path, int arg1,int arg2,int arg3,int ret)
 {
 	char logtime[64];
 	char username[32];
@@ -94,9 +61,9 @@ void Log_file(int operation, char *commandname,int uid, int pid, char *file_path
 	char opentype[16];
 	if (ret >= 0) strcpy(openresult,"success");
 	else strcpy(openresult,"failed");
-	if (flags & O_RDONLY ) strcpy(opentype, "Read");
-	else if (flags & O_WRONLY ) strcpy(opentype, "Write");
-	else if (flags & O_RDWR ) strcpy(opentype, "Read/Write");
+	if (arg3 & O_RDONLY ) strcpy(opentype, "Read");
+	else if (arg3 & O_WRONLY ) strcpy(opentype, "Write");
+	else if (arg3 & O_RDWR ) strcpy(opentype, "Read/Write");
 	else strcpy(opentype,"other");
 
 	time_t t=time(0);
@@ -112,6 +79,76 @@ void Log_file(int operation, char *commandname,int uid, int pid, char *file_path
 	
 	printf("%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
 }
+
+void print_ip_address(unsigned int ip)
+{
+    struct in_addr addr;
+    addr.s_addr = ip;
+
+    // 使用 inet_ntoa 函数将整数 IP 地址转换为可读的字符串
+    char *ip_str = inet_ntoa(addr);
+
+    // 打印 IP 地址
+    printf("IP Address: %s\n", ip_str);
+}
+
+
+void Log_Connect(char *commandname,int uid, int pid,char*  buffer,int port_int, int ip_int, int arg3, int ret) {
+    char logtime[64];
+    char username[32];
+    struct passwd *pwinfo;
+    char connectresult[10];
+
+    struct sockaddr_in *addr_in = (struct sockaddr_in *)buffer;
+
+    // 提取 IP 和端口信息
+    unsigned int ip = addr_in->sin_addr.s_addr;
+    unsigned short port = addr_in->sin_port;
+
+    if (ret == 0)
+        strcpy(connectresult, "success");
+    else
+        strcpy(connectresult, "failed");
+
+    unsigned char bytes[4];
+    bytes[0] = ip_int & 0xFF;
+    bytes[1] = (ip_int >> 8) & 0xFF;
+    bytes[2] = (ip_int >> 16) & 0xFF;
+    bytes[3] = (ip_int >> 24) & 0xFF;
+	if(port){
+    print_ip_address(ip);
+    printf("Port: %hu\n", ntohs(port));}
+
+    // snprintf(ip, 4, "%u.%u.%u.%u", bytes[0], bytes[1], bytes[2], bytes[3]);
+
+    // time_t t = time(0);
+    // if (logfile == NULL)
+    //     return;
+    // //pwinfo = getpwuid(uid);
+    // //strcpy(username, pwinfo->pw_name);
+
+    // strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
+    // fprintf(logfile, "%s() %s() %s %s:%d %s\n", username, "connect", logtime, ip, port, connectresult);
+    // printf("%s() %s() %s %s:%d %s\n", username, "connect", logtime, ip, port, connectresult);
+}
+
+void Log_Socket(char *commandname,int uid, int pid,  int arg1,int arg2,int arg3,int ret)
+{
+	char logtime[64];
+	char username[32];
+	struct passwd *pwinfo;
+	
+
+	time_t t=time(0);
+	if (logfile == NULL)	return;
+	pwinfo = getpwuid(uid);
+	strcpy(username,pwinfo->pw_name);
+
+	// strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t) );
+	// fprintf(logfile,"%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	// printf("%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+}
+
 
 // Fixed , DONOT CHANGE
 // has no related to specific function
@@ -156,71 +193,39 @@ void killdeal_func()
 	exit(0);
 }
 
-void PreLog_Open(struct nlmsghdr *nlh) {
-    unsigned int uid, pid, flags, ret;
-    char *file_path;
-    char *commandname;
 
+
+void PreLog(struct nlmsghdr *nlh) {
+    unsigned int uid, pid, ret,op;
+	int arg1,arg2,arg3;
+    char *buffer;
+    char *commandname;
+	op=*((unsigned int *)NLMSG_DATA(nlh));
     uid = *(1+(unsigned int *)NLMSG_DATA(nlh));
     pid = *(2 + (int *)NLMSG_DATA(nlh));
-    flags = *(3 + (int *)NLMSG_DATA(nlh));
-    ret = *(4 + (int *)NLMSG_DATA(nlh));
-    commandname = (char *)(5 + (int *)NLMSG_DATA(nlh));
-    file_path = (char *)(5 + 16 / 4 + (int *)NLMSG_DATA(nlh));
-
-    Log_Open(commandname, uid, pid, file_path, flags, ret);
+    arg1 = *(3 + (int *)NLMSG_DATA(nlh));
+	arg2 = *(4 + (int *)NLMSG_DATA(nlh));
+	arg3 = *(5 + (int *)NLMSG_DATA(nlh));
+    ret = *(6 + (int *)NLMSG_DATA(nlh));
+    commandname = (char *)(7 + (int *)NLMSG_DATA(nlh));
+    buffer = (char *)(7 + 16 / 4 + (int *)NLMSG_DATA(nlh));
+	switch(op){
+		case __NR_openat:
+    		Log_Open(op,commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
+			break;
+		case __NR_connect:
+			Log_Connect(commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
+			break;
+		case __NR_socket:
+			Log_Socket(commandname, uid, pid, arg1 , arg2 , arg3 ,ret);
+			break;
+		case __NR_execve:
+		case __NR_unlinkat:
+			Log_file(op,commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
+	}
 }
 
-void print_ip_address(unsigned int ip)
-{
-    struct in_addr addr;
-    addr.s_addr = ip;
 
-    // 使用 inet_ntoa 函数将整数 IP 地址转换为可读的字符串
-    char *ip_str = inet_ntoa(addr);
-
-    // 打印 IP 地址
-    printf("IP Address: %s\n", ip_str);
-}
-
-void PreLog_Connect(struct nlmsghdr *nlh) {
-    //int port,ip,ret;printf("IP Address: %d\n", ip);
-
-    char *netbuf;
-
-    // port= *(1 + (int *)NLMSG_DATA(nlh));
-    // ip = *(2 + (int *)NLMSG_DATA(nlh));
-    //ret = *(4 + (int *)NLMSG_DATA(nlh));
-    netbuf = (char *)(5 + (int *)NLMSG_DATA(nlh));
-	struct sockaddr_in *addr_in = (struct sockaddr_in *)netbuf;
-
-    // 提取 IP 和端口信息
-    unsigned int ip = addr_in->sin_addr.s_addr;
-    unsigned short port = addr_in->sin_port;
-
-    // 打印 IP 和端口信息
-	if(port){
-    print_ip_address(ip);
-    printf("Port: %hu\n", ntohs(port));}
-
-    //Log_Connect(port, ip, netbuf, ret);
-}
-
-void PreLog_File(struct nlmsghdr *nlh) {
-    unsigned int uid, pid, flags, ret, operation;
-    char *file_path;
-    char *commandname;
-    operation = *((unsigned int *)NLMSG_DATA(nlh));
-    
-    uid = *(1+(unsigned int *)NLMSG_DATA(nlh));
-    pid = *(2 + (int *)NLMSG_DATA(nlh));
-    flags = *(3 + (int *)NLMSG_DATA(nlh));
-    ret = *(4 + (int *)NLMSG_DATA(nlh));
-    commandname = (char *)(5 + (int *)NLMSG_DATA(nlh));
-    file_path = (char *)(5 + 16 / 4 + (int *)NLMSG_DATA(nlh));
-
-    Log_file(operation, commandname, uid, pid, file_path, flags, ret);
-}
 
 
 int main(int argc, char *argv[]){
@@ -252,22 +257,7 @@ int main(int argc, char *argv[]){
 	while(1){	//Read message from kernel
 
 		recvmsg(sock_fd, &msg, 0);
-		switch(*((unsigned int *)NLMSG_DATA(nlh))){
-			case __NR_openat:
-				PreLog_Open(nlh);
-				break;
-			case __NR_execve:
-			case __NR_unlinkat:
-				PreLog_File(nlh);
-				break;
-			case __NR_connect:
-				PreLog_Connect(nlh);
-				break;
-			default:
-				printf("Error\n");
-				break;
-		}
-		
+		PreLog(nlh);
     }
 	close(sock_fd);
 	free(nlh);

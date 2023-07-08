@@ -82,26 +82,18 @@ void get_fullname(const char *pathname,char *fullname)
 int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)
 {
     int flag=1;
-//存储命令名称的commandname、完整路径名的fullname、消息缓冲区的大小size
     char commandname[TASK_COMM_LEN];
     char fullname[PATH_MAX];
-    unsigned int size;   // = strlen(pathname) + 32 + TASK_COMM_LEN;
-    void * buffer; // = kmalloc(size, 0);
+    unsigned int size;   
+    void * buffer; 
     char auditpath[PATH_MAX];
     const struct cred *cred;
-
-
+    int a=0;int b=0;int c=0;
     memset(fullname, 0, PATH_MAX);
     memset(auditpath, 0, PATH_MAX);
-
-// 调用get_fullname函数获取完整路径名，并将其存储在fullname中。
+    // about audit
     get_fullname(pathname,fullname);
-
-    //printk("Info: fullname is  %s \n",fullname);
-
-// 预定义的审计路径AUDITPATH存储在auditpath中。
     strcpy(auditpath,AUDITPATH);
-// 如果fullname不是以auditpath开头，则返回1，表示不需要进行审计。
     if (strncmp(fullname,auditpath,strlen(auditpath)) != 0) return 1;
 
     printk("Info: fullname is  %s \t; Auditpath is  %s \n",fullname,AUDITPATH);
@@ -109,21 +101,25 @@ int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)
 // 然后，它将当前进程的命令名称复制到commandname中。
 // current 是一个全局变量，它指向 task_struct 结构体，该结构体包含了与当前进程相关的信息。
     strncpy(commandname,current->comm,TASK_COMM_LEN);
+
+
 //16：表示用于存储用户ID、进程ID、regs->dx 和打开文件返回值的 4 个整数的总大小。每个整数占用 4 个字节，所以总共占用 16 个字节。
 //1：表示用于存储字符串结束符 \0 的一个字节。
-    size = strlen(fullname) +4 + 16 + TASK_COMM_LEN + 1;
+    size = strlen(fullname) +28 + TASK_COMM_LEN + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
 // 接着，它将当前进程的用户ID、进程ID、regs->dx和打开文件的返回值存储到buffer中。
     cred = current_cred();
     *((int*)buffer) = __NR_openat;
-    *((int*)buffer+1) = cred->uid.val;   //uid
+    *((int*)buffer + 1) = cred->uid.val;   //uid
     *((int*)buffer + 2) = current->pid;
     *((int*)buffer + 3) = regs->dx; // regs->dx: mode for open file
-    *((int*)buffer + 4) = ret;
+    *((int*)buffer + 4) = b;
+    *((int*)buffer + 5) = c;
+    *((int*)buffer + 6) = ret;
 //最后，将commandname和fullname添加到buffer中，并调用netlink_sendmsg函数发送netlink消息。
-    strcpy( (char*)( 5 + (int*)buffer ), commandname);
-    strcpy( (char*)( 5 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
+    strcpy( (char*)( 7 + (int*)buffer ), commandname);
+    strcpy( (char*)( 7 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
 
     netlink_sendmsg(buffer, size);
     return 0;
@@ -142,26 +138,37 @@ int AuditReboot(struct pt_regs * regs,int ret)
 }
 
 int AuditConnect(struct pt_regs * regs,char * netbuf,int ret){
-    unsigned int size;
-    void * buffer;
-    size=54;
+
+    char commandname[TASK_COMM_LEN];
+    unsigned int size;   
+    void * buffer; 
+    char fullname[PATH_MAX];
+    char auditpath[PATH_MAX];
     buffer = kmalloc(size, 0);
+    const struct cred *cred;
+    int a=0;int b=0;int c=0;
+    memset(fullname, 0, PATH_MAX);
+    memset(auditpath, 0, PATH_MAX);
     memset(buffer, 0, size);
+    strcpy(auditpath,AUDITPATH);
+    // audit path --- __NR_socket
+    strncpy(commandname,current->comm,TASK_COMM_LEN);
+    size = strlen(fullname) +28 + TASK_COMM_LEN + 1;
+    cred = current_cred();
     const unsigned short *port = (const unsigned short *)(netbuf + 2);
     unsigned short port_tmp=*port;
     int port_int=(int)port_tmp;
     const unsigned int *ip = (const unsigned int *)(netbuf + 4);
     int ip_tmp=*ip;
-    int flag=__NR_connect;
-    *((int*)buffer) = flag;
-    *((int*)buffer+1) = port_int;   //uid
-    printk("Port: %d\n", port_int);
-    *((int*)buffer + 2) = ip_tmp;
-    printk("ip: %d\n", ip_tmp);
-    *((int*)buffer + 3) = regs->di;
-    *((int*)buffer + 4) = regs->dx;
-    strcpy( (char*)( 5 + (int*)buffer ), netbuf);
-    printk("netbuf:%s\n",netbuf);
+    *((int*)buffer) = __NR_connect;
+    *((int*)buffer + 1) = cred->uid.val; 
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = port_int; 
+    *((int*)buffer + 4) = ip_tmp;
+    *((int*)buffer + 5) = (int)regs->di;
+    *((int*)buffer + 6) = ret;
+    strcpy( (char*)( 7 + (int*)buffer ), commandname);
+    strcpy( (char*)( 7 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
     netlink_sendmsg(buffer, size);
     return 0;
 }
@@ -169,48 +176,39 @@ int AuditConnect(struct pt_regs * regs,char * netbuf,int ret){
 int AuditExecve(struct pt_regs * regs, char * pathname,int ret)
 {
     
-//存储命令名称的commandname、完整路径名的fullname、消息缓冲区的大小size
     char commandname[TASK_COMM_LEN];
     char fullname[PATH_MAX];
     unsigned int size;   // = strlen(pathname) + 32 + TASK_COMM_LEN;
     void * buffer; // = kmalloc(size, 0);
     char auditpath[PATH_MAX];
     const struct cred *cred;
-
+    int a=0;int b=0;int c=0;
 
     memset(fullname, 0, PATH_MAX);
     memset(auditpath, 0, PATH_MAX);
 
-// 调用get_fullname函数获取完整路径名，并将其存储在fullname中。
     get_fullname(pathname,fullname);
 
-    //printk("Info: fullname is  %s \n",fullname);
 
-// 预定义的审计路径AUDITPATH存储在auditpath中。
     strcpy(auditpath,AUDITPATH);
-// 如果fullname不是以auditpath开头，则返回1，表示不需要进行审计。
     if (strncmp(fullname,auditpath,strlen(auditpath)) != 0) return 1;
 
     printk("Info: operation:exe\t fullname is  %s \t; Auditpath is  %s \n",fullname,AUDITPATH);
 
-// 然后，它将当前进程的命令名称复制到commandname中。
-// current 是一个全局变量，它指向 task_struct 结构体，该结构体包含了与当前进程相关的信息。
     strncpy(commandname,current->comm,TASK_COMM_LEN);
-//16：表示用于存储用户ID、进程ID、regs->dx 和打开文件返回值的 4 个整数的总大小。每个整数占用 4 个字节，所以总共占用 16 个字节。
-//1：表示用于存储字符串结束符 \0 的一个字节。
-    size = strlen(fullname) + 20 + TASK_COMM_LEN + 1;
+    size = strlen(fullname) + 28 + TASK_COMM_LEN + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
-// 接着，它将当前进程的用户ID、进程ID、regs->dx和打开文件的返回值存储到buffer中。
     cred = current_cred();
     *((int*)buffer)=__NR_execve;
-    *((int*)buffer+1) = cred->uid.val; ;  //uid
+    *((int*)buffer + 1) = cred->uid.val; ;  //uid
     *((int*)buffer + 2) = current->pid;
     *((int*)buffer + 3) = regs->dx; // regs->dx: mode for open file
-    *((int*)buffer + 4) = ret;
-//最后，将commandname和fullname添加到buffer中，并调用netlink_sendmsg函数发送netlink消息。
-    strcpy( (char*)( 5 + (int*)buffer ), commandname);
-    strcpy( (char*)( 5 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
+    *((int*)buffer + 4) = b;
+    *((int*)buffer + 5) = c;
+    *((int*)buffer + 6) = ret;
+    strcpy( (char*)( 7 + (int*)buffer ), commandname);
+    strcpy( (char*)( 7 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
 
     netlink_sendmsg(buffer, size);
     return 0;
@@ -218,49 +216,33 @@ int AuditExecve(struct pt_regs * regs, char * pathname,int ret)
 
 int AuditUnlinkat(struct pt_regs * regs, char * fullname,int ret)
 {
-    // printk("get in audit_unlink");
-//存储命令名称的commandname、完整路径名的fullname、消息缓冲区的大小size
     char commandname[TASK_COMM_LEN];
-    // char fullname[PATH_MAX];
-    unsigned int size;   // = strlen(pathname) + 32 + TASK_COMM_LEN;
-    void * buffer; // = kmalloc(size, 0);
+    unsigned int size;   
+    void * buffer; 
+    int a=0;int b=0;int c=0;
     char auditpath[PATH_MAX];
     const struct cred *cred;
-
-
-    // memset(fullname, 0, PATH_MAX);
     memset(auditpath, 0, PATH_MAX);
-
-// 调用get_fullname函数获取完整路径名，并将其存储在fullname中。
-    // get_fullname(pathname,fullname);
-
-    //printk("Info: fullname is  %s \n",fullname);
-
-// 预定义的审计路径AUDITPATH存储在auditpath中。
     strcpy(auditpath,AUDITPATH);
-// 如果fullname不是以auditpath开头，则返回1，表示不需要进行审计。
-// printk("pathname: %s fullname: %s auditpath: %s", pathname, fullname, auditpath);
     if (strncmp(fullname,auditpath,strlen(auditpath)) != 0) return 1;
+
     printk("Info: operation:unlink \t fullname is  %s \t; Auditpath is  %s \n",fullname,AUDITPATH);
 
-// 然后，它将当前进程的命令名称复制到commandname中。
-// current 是一个全局变量，它指向 task_struct 结构体，该结构体包含了与当前进程相关的信息。
     strncpy(commandname,current->comm,TASK_COMM_LEN);
-//16：表示用于存储用户ID、进程ID、regs->dx 和打开文件返回值的 4 个整数的总大小。每个整数占用 4 个字节，所以总共占用 16 个字节。
-//1：表示用于存储字符串结束符 \0 的一个字节。
-    size = strlen(fullname) + 20 + TASK_COMM_LEN + 1;
+
+    size = strlen(fullname) + 28 + TASK_COMM_LEN + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
-// 接着，它将当前进程的用户ID、进程ID、regs->dx和打开文件的返回值存储到buffer中。
     cred = current_cred();
     *((int*)buffer)=__NR_unlinkat;
-    *((int*)buffer+1) = cred->uid.val; ;  //uid
+    *((int*)buffer + 1) = cred->uid.val; ;  //uid
     *((int*)buffer + 2) = current->pid;
     *((int*)buffer + 3) = regs->dx; // regs->dx: mode for open file
-    *((int*)buffer + 4) = ret;
-//最后，将commandname和fullname添加到buffer中，并调用netlink_sendmsg函数发送netlink消息。
-    strcpy( (char*)( 5 + (int*)buffer ), commandname);
-    strcpy( (char*)( 5 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
+    *((int*)buffer + 4) = b;
+    *((int*)buffer + 5) = c;
+    *((int*)buffer + 6) = ret;
+    strcpy( (char*)( 7 + (int*)buffer ), commandname);
+    strcpy( (char*)( 7 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
 
     netlink_sendmsg(buffer, size);
     return 0;
@@ -304,7 +286,39 @@ int AuditReboot(struct pt_regs * regs,int ret)
     size = 4;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
-    *((int*)buffer) = 114;
+    *((int*)buffer) = __NR_reboot;
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
+int AuditSocket(struct pt_regs * regs,int ret,int a,int b,int c)
+{
+    char commandname[TASK_COMM_LEN];
+    unsigned int size;   
+    void * buffer; 
+    char fullname[PATH_MAX];
+    char auditpath[PATH_MAX];
+    size = 20;
+    buffer = kmalloc(size, 0);
+    const struct cred *cred;
+    int a=0;int b=0;int c=0;
+    memset(fullname, 0, PATH_MAX);
+    memset(auditpath, 0, PATH_MAX);
+    memset(buffer, 0, size);
+    strcpy(auditpath,AUDITPATH);
+    // audit path --- 
+    strncpy(commandname,current->comm,TASK_COMM_LEN);
+    size = strlen(fullname) +28 + TASK_COMM_LEN + 1;
+    cred = current_cred();
+    *((int*)buffer) = __NR_socket;
+    *((int*)buffer + 1) = cred->uid.val; 
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = (int)regs->di; 
+    *((int*)buffer + 4) = (int)regs->si;
+    *((int*)buffer + 5) = (int)regs->dx;
+    *((int*)buffer + 6) = ret;
+    strcpy( (char*)( 7 + (int*)buffer ), commandname);
+    strcpy( (char*)( 7 + TASK_COMM_LEN/4 +(int*)buffer ), fullname);
     netlink_sendmsg(buffer, size);
     return 0;
 }

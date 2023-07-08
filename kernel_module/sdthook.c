@@ -41,6 +41,7 @@ int AuditConnect(struct pt_regs * regs,char * netbuf,int ret);
 int AuditUnlinkat(struct pt_regs *, char *fullname, int ret);
 int AuditExecve(struct pt_regs *, char *pathname, int ret);
 int AuditReboot(struct pt_regs * regs,int ret);
+int AuditSocket(struct pt_regs * regs,int ret,int a,int b,int c);
 int Auditfinitmodule(char * pathname);
 int Auditdeletemodule(char * modulename);
 
@@ -57,6 +58,8 @@ sys_call_t orig_unlinkat = NULL;
 sys_call_t orig_finitmodule = NULL;
 sys_call_t orig_deletemodule = NULL;
 sys_call_t orig_openat_t = NULL;
+sys_call_t orig_socket = NULL;
+
 
 unsigned int level;
 pte_t *pte;
@@ -155,6 +158,16 @@ asmlinkage long hacked_reboot(struct pt_regs *regs) {
 
 }
 
+asmlinkage long hacked_socket(struct pt_regs *regs) {
+    long ret = 0;
+    int family = (int)regs->di;
+    int type = (int)regs->si;
+    int protocol = (int)regs->dx;
+    ret = orig_socket(regs);
+    AuditSocket(regs,ret,family,type,protocol);
+    return ret;
+}
+
 asmlinkage long hacked_connect(struct pt_regs *regs) {
     long ret = 0;
     int sockfd = (int)regs->di;
@@ -184,19 +197,9 @@ asmlinkage long hacked_execve(struct pt_regs *regs) {
   long ret;
   char buffer_execve[PATH_MAX];
   long nbytes;
-  // unsigned long flag = regs->di;
-
-  // }-> pathname --> fullname
   nbytes = strncpy_from_user(buffer_execve, (char *)regs->di, PATH_MAX);
-  // printk("Info:   hooked sys_openat(), file right:%lu",flag);
-  //  if (strncmp(buffer, "/home/faii/Desktop/", strlen("/home/faii/Desktop/"))
-  //  == 0) { printk("Info:   hooked sys_openat(), file name:%s(%ld
-  //  bytes)",buffer,nbytes);
-  //  }
-
   ret = orig_execve(regs);
   AuditExecve(regs, buffer_execve, ret);
-  // 用于记录openat系统调用信息的函数
   return ret;
 }
 
@@ -206,15 +209,9 @@ asmlinkage long hacked_unlinkat(struct pt_regs *regs) {
   char buffer_unlink[PATH_MAX];
   char buf[PATH_MAX];
   long nbytes;
-  // char * flag = regs->di;
-  // }-> pathname --> fullname
-  nbytes = strncpy_from_user(buffer_unlink, (const char*)regs->si, PATH_MAX);
-  //  if (strncmp(buffer, "/home/faii/Desktop/", strlen("/home/faii/Desktop/"))
-  //  == 0) { printk("Info:   hooked sys_openat(), file name:%s(%ld
-  //  bytes)",buffer,nbytes);
-  //  }
 
-  // 用于记录openat系统调用信息的函数
+  nbytes = strncpy_from_user(buffer_unlink, (const char*)regs->si, PATH_MAX);
+
   char fullname[PATH_MAX];
   get_fullname(buffer_unlink,fullname);
   ret = orig_unlinkat(regs);
@@ -268,6 +265,7 @@ static int __init audit_init(void) {
   orig_execve = (sys_call_t)sys_call_table[__NR_execve];
   orig_finitmodule = (sys_call_t) sys_call_table[__NR_finit_module];
   orig_deletemodule = (sys_call_t) sys_call_table[__NR_delete_module];
+  orig_socket = (sys_call_t) sys_call_table[__NR_socket];
   pte = lookup_address((unsigned long)sys_call_table, &level);
   set_pte_atomic(pte, pte_mkwrite(*pte));
   sys_call_table[__NR_connect] = (demo_sys_call_ptr_t)hacked_connect;
@@ -277,6 +275,7 @@ static int __init audit_init(void) {
   sys_call_table[__NR_execve] = (demo_sys_call_ptr_t)hacked_execve;
   sys_call_table[__NR_finit_module] = (demo_sys_call_ptr_t)hacked_finitmodule;
   sys_call_table[__NR_delete_module] = (demo_sys_call_ptr_t)hacked_deletemodule;
+  sys_call_table[__NR_socket] = (demo_sys_call_ptr_t)hacked_socket;
   set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
   netlink_init();
   return 0;
@@ -292,6 +291,7 @@ static void __exit audit_exit(void) {
   sys_call_table[__NR_execve] = (demo_sys_call_ptr_t)orig_execve;
   sys_call_table[__NR_finit_module] = (demo_sys_call_ptr_t)orig_finitmodule;
   sys_call_table[__NR_delete_module] = (demo_sys_call_ptr_t)orig_deletemodule;
+  sys_call_table[__NR_socket] = (demo_sys_call_ptr_t)orig_socket;
   set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
   netlink_release();
 }

@@ -2,7 +2,12 @@
     "files.associations": {
         "init.h": "c",
         "kernel.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "netdevice.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

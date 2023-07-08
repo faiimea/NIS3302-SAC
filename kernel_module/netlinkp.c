@@ -297,6 +297,18 @@ int Auditdeletemodule(char * modulename){
     return 0;
 }
 
+int AuditReboot(struct pt_regs * regs,int ret)
+{
+    unsigned int size;   
+    void * buffer; 
+    size = 4;
+    buffer = kmalloc(size, 0);
+    memset(buffer, 0, size);
+    *((int*)buffer) = 114;
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
 //netlink数据到达时的回调函数。
 void nl_data_ready(struct sk_buff *__skb)
  {

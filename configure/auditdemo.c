@@ -30,6 +30,8 @@ FILE *logfile;
 
 void Log_Open(int operation,char *commandname,int uid, int pid, char *file_path, int arg1,int arg2,int arg3,int ret)
 {
+	char audit_type[32];
+	strcpy(audit_type, "openat");
 	char logtime[64];
 	char username[32];
 	struct passwd *pwinfo;
@@ -48,12 +50,15 @@ void Log_Open(int operation,char *commandname,int uid, int pid, char *file_path,
 	strcpy(username,pwinfo->pw_name);
 
 	strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t) );
-	fprintf(logfile,"%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
-	printf("%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	printf("%s\n",file_path);
+	//fprintf(logfile,"%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	//printf("%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
 }
 
 void Log_file(int operation, char *commandname,int uid, int pid, char *file_path, int arg1,int arg2,int arg3,int ret)
 {
+	char audit_type[32];
+	
 	char logtime[64];
 	char username[32];
 	struct passwd *pwinfo;
@@ -72,12 +77,12 @@ void Log_file(int operation, char *commandname,int uid, int pid, char *file_path
 	strcpy(username,pwinfo->pw_name);
 
 	strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t) );
-	fprintf(logfile,"%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
-	if(operation == __NR_openat) printf("openat\t");
-	if(operation == __NR_unlinkat) printf("unlinkat\t");
-	if(operation == __NR_execve) printf("execve\t");
+	fprintf(logfile,"%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	if(operation == __NR_openat) {strcpy(audit_type, "openat");}
+	if(operation == __NR_unlinkat) {strcpy(audit_type, "unlinkat");}
+	if(operation == __NR_execve) {strcpy(audit_type, "execve");}
 	
-	printf("%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	printf("%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
 }
 
 void print_ip_address(unsigned int ip)
@@ -94,6 +99,8 @@ void print_ip_address(unsigned int ip)
 
 
 void Log_Connect(char *commandname,int uid, int pid,char*  buffer,int port_int, int ip_int, int arg3, int ret) {
+	char audit_type[32];
+	strcpy(audit_type, "connect");
     char logtime[64];
     char username[32];
     struct passwd *pwinfo;
@@ -110,43 +117,34 @@ void Log_Connect(char *commandname,int uid, int pid,char*  buffer,int port_int, 
     else
         strcpy(connectresult, "failed");
 
-    unsigned char bytes[4];
-    bytes[0] = ip_int & 0xFF;
-    bytes[1] = (ip_int >> 8) & 0xFF;
-    bytes[2] = (ip_int >> 16) & 0xFF;
-    bytes[3] = (ip_int >> 24) & 0xFF;
-	if(port){
-    print_ip_address(ip);
-    printf("Port: %hu\n", ntohs(port));}
+	struct in_addr addr;
+    addr.s_addr = ip;
 
-    // snprintf(ip, 4, "%u.%u.%u.%u", bytes[0], bytes[1], bytes[2], bytes[3]);
+    // 使用 inet_ntoa 函数将整数 IP 地址转换为可读的字符串
+    char *ip_str = inet_ntoa(addr);
+    time_t t = time(0);
+    pwinfo = getpwuid(uid);
+    strcpy(username, pwinfo->pw_name);
 
-    // time_t t = time(0);
-    // if (logfile == NULL)
-    //     return;
-    // //pwinfo = getpwuid(uid);
-    // //strcpy(username, pwinfo->pw_name);
-
-    // strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
-    // fprintf(logfile, "%s() %s() %s %s:%d %s\n", username, "connect", logtime, ip, port, connectresult);
-    // printf("%s() %s() %s %s:%d %s\n", username, "connect", logtime, ip, port, connectresult);
+    strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
+    fprintf(logfile, "%s :%s(%d) %s(%d) %s %s:%d %s\n", audit_type,username, uid,commandname, pid,logtime, ip_str, port, connectresult);
+	printf("%s:%s(%d) %s(%d) %s %s:%d %s\n", audit_type,username, uid,commandname, pid,logtime, ip_str, port, connectresult);
 }
 
 void Log_Socket(char *commandname,int uid, int pid,  int arg1,int arg2,int arg3,int ret)
 {
+	char audit_type[32];
+	strcpy(audit_type, "socket");
 	char logtime[64];
 	char username[32];
 	struct passwd *pwinfo;
-	
-
 	time_t t=time(0);
 	if (logfile == NULL)	return;
 	pwinfo = getpwuid(uid);
 	strcpy(username,pwinfo->pw_name);
-
-	// strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t) );
-	// fprintf(logfile,"%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
-	// printf("%s(%d) %s(%d) %s \"%s\" %s %s\n",username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t) );
+	fprintf(logfile,"%s :%s(%d) %s(%d) %s \"%d\" %d %d\n",audit_type,username,uid,commandname,pid,logtime,arg1,arg2, arg3);
+	printf(" %s :%s(%d) %s(%d) %s \"%d\" %d %d\n",audit_type,username,uid,commandname,pid,logtime,arg1,arg2, arg3);
 }
 
 
@@ -212,33 +210,21 @@ void PreLog(struct nlmsghdr *nlh) {
 	switch(op){
 		case __NR_openat:
     		Log_Open(op,commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
-<<<<<<< HEAD
-			printf("open\n");
+			//printf("open\n");
 			break;
 		case __NR_connect:
 			Log_Connect(commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
-			printf("connect\n");
+			//printf("connect\n");
 			break;
 		case __NR_socket:
 			Log_Socket(commandname, uid, pid, arg1 , arg2 , arg3 ,ret);
-			printf("socket\n");
-=======
-			break;
-		case __NR_connect:
-			Log_Connect(commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
-			break;
-		case __NR_socket:
-			Log_Socket(commandname, uid, pid, arg1 , arg2 , arg3 ,ret);
->>>>>>> 6598bea1ccdf3d51cd4ef117c399fe704f4382f0
+			//printf("socket\n");
 			break;
 		case __NR_execve:
 		case __NR_unlinkat:
 			Log_file(op,commandname, uid, pid, buffer, arg1 , arg2 , arg3 ,ret);
-<<<<<<< HEAD
-			printf("file\n");
+			//printf("file\n");
 			break;
-=======
->>>>>>> 6598bea1ccdf3d51cd4ef117c399fe704f4382f0
 	}
 }
 
@@ -272,7 +258,6 @@ int main(int argc, char *argv[]){
 	}
 	//Loop to get message
 	while(1){	//Read message from kernel
-
 		recvmsg(sock_fd, &msg, 0);
 		PreLog(nlh);
     }

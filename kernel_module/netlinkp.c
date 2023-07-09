@@ -5,6 +5,7 @@
 #include <linux/sched.h>
 #include <linux/fs_struct.h>
 #include <linux/limits.h>
+#include <linux/namei.h>
 
 #define TASK_COMM_LEN 16
 #define NETLINK_TEST 29
@@ -44,26 +45,37 @@ int netlink_sendmsg(const void *buffer, unsigned int size)
 }
 
 // 用于获取完整的文件路径名。
-void get_fullname(const char *pathname,char *fullname)
-{
-	// 获取当前进程的当前工作目录的dentry结构体指针parent_dentry
-	struct dentry *parent_dentry = current->fs->pwd.dentry;
+void get_fullname(const char *pathname, char *fullname) {
+    struct path mypath;
+    struct dentry *parent_dentry = NULL;
     char buf[MAX_LENGTH];
+    int code=kern_path(pathname, LOOKUP_FOLLOW, &mypath),index=0,relative=0;
 
+    if (code != 0) {
+        //printk(KERN_ERR "Failed to get absolute path.code:%d\npath:%s",code,pathname);
+        return;
+    }
+    parent_dentry= mypath.dentry->d_parent;
 
-        // 如果parent_dentry的名称为'/'，则pathname已经是完整路径名，直接将其复制到fullname中并返回。
-	if (*(parent_dentry->d_name.name)=='/'){
-	    strcpy(fullname,pathname);
-	    return;
-	}
+    while(pathname[index]!='\0'){
+        if(pathname[index]=='/'){
+            if(pathname[index+1]=='.'){return;}
+            relative=index+1;
+            }
+        index++;
+    }
+    pathname+=relative;
 
-	// 否则，它循环遍历父级dentry，并逐步构建完整路径名。
-	// 在每次循环中，它将当前父级dentry的名称添加到buf中，并将fullname追加到buf的末尾。然后，将buf复制到fullname中，更新父级dentry为父级的父级，直到到达根目录。最后，将pathname添加到fullname的末尾，得到完整的路径名。
-	for(;;){
-	    if (strcmp(parent_dentry->d_name.name,"/")==0)
+    if (*(parent_dentry->d_name.name)=='/'){
+        strcpy(fullname,pathname);
+        return;
+    }
+
+    for(;;){
+        if (strcmp(parent_dentry->d_name.name,"/")==0)
             buf[0]='\0';//reach the root dentry.
-	    else
-	        strcpy(buf,parent_dentry->d_name.name);
+        else
+            strcpy(buf,parent_dentry->d_name.name);
         strcat(buf,"/");
         strcat(buf,fullname);
         strcpy(fullname,buf);
@@ -72,11 +84,10 @@ void get_fullname(const char *pathname,char *fullname)
             break;
 
         parent_dentry = parent_dentry->d_parent;
-	}
+    }
 
-	strcat(fullname,pathname);
-
-	return;
+    strcat(fullname,pathname);
+    return;
 }
 
 int AuditOpenat(struct pt_regs * regs, char * pathname,int ret)

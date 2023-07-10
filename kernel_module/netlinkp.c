@@ -240,33 +240,58 @@ int AuditUnlinkat(struct pt_regs * regs, char * fullname,int ret)
     return 0;
 }
 
-int Auditfinitmodule(char * pathname)
+int Auditfinitmodule(char * pathname , int ret)
 {
     unsigned int size; 
     void * buffer; // = kmalloc(size, 0);
+    const struct cred *cred;
+    char commandname[TASK_COMM_LEN];
 
-    size = strlen(pathname) + 4 + 1;
+    size = strlen(pathname) + 28 + TASK_COMM_LEN + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
+    
+    cred = current_cred();
+    strncpy(commandname,current->comm,TASK_COMM_LEN);
 
     *((int*)buffer)=__NR_finit_module;
-    strcpy( (char*)( 1 + (int*)buffer ), pathname);
-
+    *((int*)buffer + 1) = cred->uid.val;  //uid
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = 0; 
+    *((int*)buffer + 4) = 0; 
+    *((int*)buffer + 5) = 0; 
+    *((int*)buffer + 6) = ret;
+    strcpy( (char*)( 7 + (int*)buffer ), commandname);
+    strcpy( (char*)( 7 + TASK_COMM_LEN/4 + (int*)buffer ), pathname);
+    
     netlink_sendmsg(buffer, size);
     return 0;
 }
 
-int Auditdeletemodule(char * modulename){
+
+int Auditdeletemodule(char * modulename, int ret){
     unsigned int size; 
     void * buffer; // = kmalloc(size, 0);
+    const struct cred *cred;
+    char commandname[TASK_COMM_LEN];
 
-    size = strlen(modulename) + 4 + 1;
+    size = strlen(modulename) + TASK_COMM_LEN + 28 + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
+    
+    cred = current_cred();
+    strncpy(commandname,current->comm,TASK_COMM_LEN);
 
     *((int*)buffer)=__NR_delete_module;
-    strcpy( (char*)( 1 + (int*)buffer ), modulename);
-
+    *((int*)buffer + 1) = cred->uid.val;  //uid
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = 0; 
+    *((int*)buffer + 4) = 0; 
+    *((int*)buffer + 5) = 0; 
+    *((int*)buffer + 6) = ret;
+    strcpy( (char*)( 7 + (int*)buffer ), commandname);
+    strcpy( (char*)( 7 + TASK_COMM_LEN/4 + (int*)buffer ), modulename);
+    
     netlink_sendmsg(buffer, size);
     return 0;
 }

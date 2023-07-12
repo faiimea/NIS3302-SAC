@@ -42,8 +42,8 @@ int AuditUnlinkat(struct pt_regs *, char *fullname, int ret);
 int AuditExecve(struct pt_regs *, char *pathname, int ret);
 int AuditReboot(struct pt_regs * regs,int ret);
 int AuditSocket(struct pt_regs * regs,int ret,int a,int b,int c);
-int Auditfinitmodule(char * pathname);
-int Auditdeletemodule(char * modulename);
+int Auditfinitmodule(char * pathname, int ret);
+int Auditdeletemodule(char * modulename, int ret);
 
 void get_fullname(const char *pathname, char *fullname);
 void netlink_release(void);
@@ -228,13 +228,14 @@ asmlinkage long hacked_finitmodule(struct pt_regs *regs)
     uid_t uid = 0;
     int f_type = 0;
 
-    get_info_from_fd(regs->di, &ino, &uid, &f_type,buffer);  
+    get_info_from_fd(regs->di, &ino, &uid, &f_type,buffer); 
+    ret = orig_finitmodule(regs); 
 
     if(strlen(buffer)>0){
         printk("ModuleInstalled:%s\n",buffer);
-        Auditfinitmodule(buffer);
+        Auditfinitmodule(buffer, ret);
     }    
-    ret = orig_finitmodule(regs);
+    
 
     return ret;
 }
@@ -245,13 +246,14 @@ asmlinkage long hacked_deletemodule(struct pt_regs *regs){
 
 
     strncpy_from_user(buffer,(char*)regs->di,PATH_MAX);
-
+    ret = orig_deletemodule(regs);
+    
     if(strlen(buffer)>0){
         printk("ModuleDeleted:%s\n",buffer);
-        Auditdeletemodule(buffer);
+        Auditdeletemodule(buffer,ret);
     }
     else{printk(KERN_ERR "ModuleDeletedFailedtoResolve\n");}
-    ret = orig_deletemodule(regs);
+    
     return ret;
 }
 

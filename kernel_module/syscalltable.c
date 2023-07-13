@@ -13,7 +13,7 @@
 
 
 // address
-typedef void (* demo_sys_call_ptr_t)(void);
+typedef void (*demo_sys_call_ptr_t)(void);
 
 
 // fixed --- DO NOT CHANGE !!
@@ -26,28 +26,29 @@ static struct kprobe kp = {
 {return 0;}
 */
 
-demo_sys_call_ptr_t * get_syscall_table(void)
+demo_sys_call_ptr_t* get_syscall_table(void)
 {
-    demo_sys_call_ptr_t * sys_call_table=NULL;
+    demo_sys_call_ptr_t* sys_call_table = NULL;
 
     /*Use kprobe to get sys_call_table */
-     int ret=-1;
-     //kp.pre_handler=noop_pre;
+    int ret = -1;
+    //kp.pre_handler=noop_pre;
 
-     ret=register_kprobe(&kp);
-     if(ret<0)
-          printk("Info: register_kprobe faild, error:%d\n",ret);
-
-
-     sys_call_table=(demo_sys_call_ptr_t *) kp.addr;
-
-     unregister_kprobe(&kp);
+    ret = register_kprobe(&kp);
+    if (ret < 0)
+        printk("Info: register_kprobe faild, error:%d\n", ret);
 
 
-     //Print sys_call_table address
-     printk("Info: sys_call_table is at %lx\n", (long) sys_call_table);
+    sys_call_table = (demo_sys_call_ptr_t*)kp.addr;
 
-     return sys_call_table;
+    unregister_kprobe(&kp);
+
+
+    //Print sys_call_table address
+    printk("Info: sys_call_table is at %lx\n", (long)sys_call_table);
+
+    return sys_call_table;
 }
+
 
 

@@ -165,6 +165,93 @@ int AuditConnect(struct pt_regs* regs, char* netbuf, int ret) {
     return 0;
 }
 
+int AuditBind(struct pt_regs* regs, char* netbuf, int ret) {
+
+    char commandname[TASK_COMM_LEN];
+    strncpy(commandname, current->comm, TASK_COMM_LEN);
+    unsigned int size;
+    void* buffer;
+    size = strlen(netbuf) + 28 + TASK_COMM_LEN + 1;
+    buffer = kmalloc(size, 0);
+    memset(buffer, 0, size);
+    const unsigned short* port = (const unsigned short*)(netbuf + 2);
+    unsigned short port_tmp = *port;
+    int port_int = (int)port_tmp;
+    const unsigned int* ip = (const unsigned int*)(netbuf + 4);
+    int ip_tmp = *ip;
+    const struct cred* cred;
+    cred = current_cred();
+    *((int*)buffer) = __NR_bind;
+    *((int*)buffer + 1) = cred->uid.val;
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = port_int;   //uid
+    *((int*)buffer + 4) = regs->di;
+    *((int*)buffer + 5) = regs->dx;
+    *((int*)buffer + 6) = ret;
+    strcpy((char*)(7 + (int*)buffer), commandname);
+    strcpy((char*)(7 + TASK_COMM_LEN / 4 + (int*)buffer), netbuf);
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
+int AuditSendto(struct pt_regs* regs, char* netbuf, int ret) {
+
+    char commandname[TASK_COMM_LEN];
+    strncpy(commandname, current->comm, TASK_COMM_LEN);
+    unsigned int size;
+    void* buffer;
+    size = strlen(netbuf) + 28 + TASK_COMM_LEN + 1;
+    buffer = kmalloc(size, 0);
+    memset(buffer, 0, size);
+    const unsigned short* port = (const unsigned short*)(netbuf + 2);
+    unsigned short port_tmp = *port;
+    int port_int = (int)port_tmp;
+    const unsigned int* ip = (const unsigned int*)(netbuf + 4);
+    int ip_tmp = *ip;
+    const struct cred* cred;
+    cred = current_cred();
+    *((int*)buffer) = __NR_sendto;
+    *((int*)buffer + 1) = cred->uid.val;
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = regs->di;   //uid
+    *((int*)buffer + 4) = regs->cx;
+    *((int*)buffer + 5) = regs->dx;
+    *((int*)buffer + 6) = ret;
+    strcpy((char*)(7 + (int*)buffer), commandname);
+    strcpy((char*)(7 + TASK_COMM_LEN / 4 + (int*)buffer), netbuf);
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
+int AuditRecvfrom(struct pt_regs* regs, char* netbuf, int ret) {
+
+    char commandname[TASK_COMM_LEN];
+    strncpy(commandname, current->comm, TASK_COMM_LEN);
+    unsigned int size;
+    void* buffer;
+    size = strlen(netbuf) + 28 + TASK_COMM_LEN + 1;
+    buffer = kmalloc(size, 0);
+    memset(buffer, 0, size);
+    const unsigned short* port = (const unsigned short*)(netbuf + 2);
+    unsigned short port_tmp = *port;
+    int port_int = (int)port_tmp;
+    const unsigned int* ip = (const unsigned int*)(netbuf + 4);
+    int ip_tmp = *ip;
+    const struct cred* cred;
+    cred = current_cred();
+    *((int*)buffer) = __NR_recvfrom;
+    *((int*)buffer + 1) = cred->uid.val;
+    *((int*)buffer + 2) = current->pid;
+    *((int*)buffer + 3) = regs->di;   //uid
+    *((int*)buffer + 4) = regs->si;
+    *((int*)buffer + 5) = regs->dx;
+    *((int*)buffer + 6) = ret;
+    strcpy((char*)(7 + (int*)buffer), commandname);
+    strcpy((char*)(7 + TASK_COMM_LEN / 4 + (int*)buffer), netbuf);
+    netlink_sendmsg(buffer, size);
+    return 0;
+}
+
 int AuditExecve(struct pt_regs* regs, char* pathname, int ret, char* path)
 {
 

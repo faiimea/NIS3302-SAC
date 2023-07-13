@@ -34,7 +34,7 @@ typedef void (*demo_sys_call_ptr_t)(void);
 
 typedef asmlinkage long (*sys_call_t)(struct pt_regs* regs);
 
-static char* path = "/home/test/Desktop";
+static char* path = "/home/faii/Desktop";
 module_param(path, charp, S_IRUSR);
 
 
@@ -42,6 +42,9 @@ demo_sys_call_ptr_t* get_syscall_table(void);
 
 int AuditOpenat(struct pt_regs*, char* pathname, int ret, char* path);
 int AuditConnect(struct pt_regs* regs, char* netbuf, int ret);
+int AuditBind(struct pt_regs* regs, char* netbuf, int ret);
+int AuditSendto(struct pt_regs* regs, char* netbuf, int ret);
+int AuditRecvfrom(struct pt_regs* regs, char* netbuf, int ret);
 int AuditUnlinkat(struct pt_regs*, char* fullname, int ret, char* path);
 int AuditExecve(struct pt_regs*, char* pathname, int ret, char* path);
 int AuditRead(struct pt_regs*, char* pathname, int ret, char* path);
@@ -52,6 +55,7 @@ int AuditReboot(struct pt_regs* regs, int ret);
 int AuditSocket(struct pt_regs* regs, int ret, int a, int b, int c);
 int Auditfinitmodule(char* pathname, int ret);
 int Auditdeletemodule(char* modulename, int ret);
+
 
 void get_fullname(const char* pathname, char* fullname);
 void netlink_release(void);
@@ -70,6 +74,11 @@ sys_call_t orig_mknodat = NULL;
 sys_call_t orig_finitmodule = NULL;
 sys_call_t orig_deletemodule = NULL;
 sys_call_t orig_socket = NULL;
+sys_call_t orig_bind = NULL;
+sys_call_t orig_listen = NULL;
+sys_call_t orig_accept = NULL;
+sys_call_t orig_sendto = NULL;
+sys_call_t orig_recvfrom= NULL;
 
 
 unsigned int level;
@@ -194,6 +203,64 @@ asmlinkage long hacked_connect(struct pt_regs* regs) {
     return ret;
 }
 
+asmlinkage long hacked_bind(struct pt_regs* regs) {
+    long ret = 0;
+    int sockfd = (int)regs->di;
+    struct sockaddr* addr = (struct sockaddr*)regs->si;
+    int addrlen = (int)regs->dx;
+    char buffer[14];
+    unsigned short family = addr->sa_family;
+    strncpy_from_user(buffer, addr->sa_data, 14);
+    const unsigned short* port = (const unsigned short*)(buffer + 2);
+    unsigned short port_tmp = *port;
+    const unsigned int* ip = (const unsigned int*)(buffer + 4);
+    int ip_tmp = *ip;
+    ret = orig_bind(regs);
+    AuditBind(regs, buffer, ret);
+    return ret;
+}
+
+asmlinkage long hacked_listen(struct pt_regs* regs) {
+    long ret = 0;
+    int sockfd = (int)regs->di;
+    int backlog = (int)regs->si;
+    printk("arg1=%d and arg2=%d\n",sockfd,backlog);
+    ret = orig_listen(regs);
+    char buffer[14];
+    //AuditListen(regs, buffer, ret);
+    return ret;
+}
+
+asmlinkage long hacked_sendto(struct pt_regs* regs) {
+    long ret = 0;
+    int sockfd = (int)regs->di;
+    void * buf=(void*)regs->si;
+    size_t len = (size_t)regs->dx;
+    // flags is composed with bits
+    int flags = (int)regs->cx;
+    int addrlen = (int)regs->r9;
+    //printk("arg1=%d and arg2=%d and arg3=%d and arg4=%d\n",sockfd,len,flags,addrlen);
+    char buffer[14];
+    ret = orig_sendto(regs);
+    AuditSendto(regs, buffer, ret);
+    return ret;
+}
+
+asmlinkage long hacked_recvfrom(struct pt_regs* regs) {
+    long ret = 0;
+    int sockfd = (int)regs->di;
+    void * buf=(void*)regs->si;
+    size_t len = (size_t)regs->dx;
+    // flags is composed with bits
+    int flags = (int)regs->cx;
+    int addrlen = (int)regs->r9;
+    //printk("arg1=%d and arg2=%d and arg3=%d and arg4=%d\n",sockfd,len,flags,addrlen);
+    char buffer[14];
+    ret = orig_recvfrom(regs);
+    AuditRecvfrom(regs, buffer, ret);
+    return ret;
+}
+
 asmlinkage long hacked_execve(struct pt_regs* regs) {
     long ret;
     char buffer_execve[PATH_MAX];
@@ -216,6 +283,7 @@ asmlinkage long hacked_unlinkat(struct pt_regs* regs) {
     AuditUnlinkat(regs, fullname, ret, path);
     return ret;
 }
+
 asmlinkage long hacked_write(struct pt_regs* regs) {
     long ret;
     char buffer_write[PATH_MAX];
@@ -254,7 +322,6 @@ asmlinkage long hacked_close(struct pt_regs* regs) {
     if (regs->di != 1 && regs->di != 2 && regs->di != 0) AuditClose(regs, buffer_close, ret, path);
     return ret;
 }
-
 
 asmlinkage long hacked_mknodat(struct pt_regs* regs) {
     long ret;
@@ -302,6 +369,7 @@ asmlinkage long hacked_deletemodule(struct pt_regs* regs) {
 
 
 
+
 static int __init audit_init(void) {
 
     sys_call_table = get_syscall_table();
@@ -317,20 +385,27 @@ static int __init audit_init(void) {
     orig_finitmodule = (sys_call_t)sys_call_table[__NR_finit_module];
     orig_deletemodule = (sys_call_t)sys_call_table[__NR_delete_module];
     orig_socket = (sys_call_t)sys_call_table[__NR_socket];
+    orig_bind = (sys_call_t)sys_call_table[__NR_bind];
+    orig_sendto = (sys_call_t)sys_call_table[__NR_sendto];
+    orig_recvfrom = (sys_call_t)sys_call_table[__NR_recvfrom];
     pte = lookup_address((unsigned long)sys_call_table, &level);
     set_pte_atomic(pte, pte_mkwrite(*pte));
-    sys_call_table[__NR_connect] = (demo_sys_call_ptr_t)hacked_connect;
-    sys_call_table[__NR_openat] = (demo_sys_call_ptr_t)hacked_openat;
-    sys_call_table[__NR_reboot] = (demo_sys_call_ptr_t)hacked_reboot;
-    sys_call_table[__NR_unlinkat] = (demo_sys_call_ptr_t)hacked_unlinkat;
-    sys_call_table[__NR_execve] = (demo_sys_call_ptr_t)hacked_execve;
-    sys_call_table[__NR_finit_module] = (demo_sys_call_ptr_t)hacked_finitmodule;
-    sys_call_table[__NR_delete_module] = (demo_sys_call_ptr_t)hacked_deletemodule;
-    sys_call_table[__NR_socket] = (demo_sys_call_ptr_t)hacked_socket;
-    sys_call_table[__NR_read] = (demo_sys_call_ptr_t)hacked_read;
-    sys_call_table[__NR_write] = (demo_sys_call_ptr_t)hacked_write;
-    sys_call_table[__NR_close] = (demo_sys_call_ptr_t)hacked_close;
-    sys_call_table[__NR_mknodat] = (demo_sys_call_ptr_t)hacked_mknodat;
+    // sys_call_table[__NR_connect] = (demo_sys_call_ptr_t)hacked_connect;
+    // sys_call_table[__NR_openat] = (demo_sys_call_ptr_t)hacked_openat;
+    // sys_call_table[__NR_reboot] = (demo_sys_call_ptr_t)hacked_reboot;
+    // sys_call_table[__NR_unlinkat] = (demo_sys_call_ptr_t)hacked_unlinkat;
+    // sys_call_table[__NR_execve] = (demo_sys_call_ptr_t)hacked_execve;
+    // sys_call_table[__NR_finit_module] = (demo_sys_call_ptr_t)hacked_finitmodule;
+    // sys_call_table[__NR_delete_module] = (demo_sys_call_ptr_t)hacked_deletemodule;
+    // sys_call_table[__NR_socket] = (demo_sys_call_ptr_t)hacked_socket;
+    // sys_call_table[__NR_read] = (demo_sys_call_ptr_t)hacked_read;
+    // sys_call_table[__NR_write] = (demo_sys_call_ptr_t)hacked_write;
+    // sys_call_table[__NR_close] = (demo_sys_call_ptr_t)hacked_close;
+    // sys_call_table[__NR_mknodat] = (demo_sys_call_ptr_t)hacked_mknodat;
+    // sys_call_table[__NR_bind] = (demo_sys_call_ptr_t)hacked_bind;
+    // sys_call_table[__NR_listen] = (demo_sys_call_ptr_t)hacked_listen;
+    sys_call_table[__NR_sendto] = (demo_sys_call_ptr_t)hacked_sendto;
+    sys_call_table[__NR_recvfrom] = (demo_sys_call_ptr_t)hacked_recvfrom;
     set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
     netlink_init();
     return 0;
@@ -351,6 +426,10 @@ static void __exit audit_exit(void) {
     sys_call_table[__NR_write] = (demo_sys_call_ptr_t)orig_write;
     sys_call_table[__NR_close] = (demo_sys_call_ptr_t)orig_close;
     sys_call_table[__NR_mknodat] = (demo_sys_call_ptr_t)orig_mknodat;
+    sys_call_table[__NR_bind] = (demo_sys_call_ptr_t)orig_bind;
+    sys_call_table[__NR_listen] = (demo_sys_call_ptr_t)orig_listen;
+    sys_call_table[__NR_sendto] = (demo_sys_call_ptr_t)orig_sendto;
+    sys_call_table[__NR_recvfrom] = (demo_sys_call_ptr_t)orig_recvfrom;
     set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
     netlink_release();
 }

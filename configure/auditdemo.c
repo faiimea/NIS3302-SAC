@@ -111,6 +111,55 @@ void Log_Connect(char* commandname, int uid, int pid, char* buffer, int port_int
 	printf("%s:%s(%d) %s(%d) %s ip= %s:port= %d %s\n", audit_type,username, uid,commandname, pid,logtime, ip_str, port, connectresult);
 }
 
+void Log_Bind(char* commandname, int uid, int pid, char* buffer, int arg1, int arg2, int arg3, int ret) {
+	char audit_type[32];
+	strcpy(audit_type, "bind");
+	char logtime[64];
+	char username[32];
+	struct passwd* pwinfo;
+	char connectresult[10];
+	int sockfd = arg2;
+    int addrlen = arg3;
+	if (ret == 0)
+		strcpy(connectresult, "success");
+	else
+		strcpy(connectresult, "failed");
+
+	struct in_addr addr;
+	time_t t = time(0);
+	pwinfo = getpwuid(uid);
+	strcpy(username, pwinfo->pw_name);
+
+    strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
+    fprintf(logfile, "%s :%s(%d) %s(%d) %s  %d:%d %s\n", audit_type,username, uid,commandname, pid,logtime, sockfd, addrlen, connectresult);
+	printf("%s:%s(%d) %s(%d) %s sockfd= %d:addrlen= %d %s\n", audit_type,username, uid,commandname, pid,logtime, sockfd, addrlen, connectresult);
+}
+
+void Log_SendOrRecv(int operation,char* commandname, int uid, int pid, char* buffer, int arg1, int arg2, int arg3, int ret) {
+	char audit_type[32];
+	if (operation == __NR_sendto) { strcpy(audit_type, "sendto"); }
+	if (operation == __NR_recvfrom) { strcpy(audit_type, "recvfrom"); }
+	char logtime[64];
+	char username[32];
+	struct passwd* pwinfo;
+	char connectresult[10];
+	int sockfd = arg1;
+	int flags = arg2;
+    int addrlen = arg3;
+	if (ret == 0)
+		strcpy(connectresult, "success");
+	else
+		strcpy(connectresult, "failed");
+
+	time_t t = time(0);
+	pwinfo = getpwuid(uid);
+	strcpy(username, pwinfo->pw_name);
+
+    strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
+    fprintf(logfile, "%s :%s(%d) %s %d  %d:%d %s\n", audit_type,username, uid,commandname,sockfd,flags,addrlen, connectresult);
+	printf("%s:%s(%d) %s %d %d :%d %s\n", audit_type,username, uid,commandname,sockfd,flags,addrlen , connectresult);
+}
+
 void Log_Socket(char* commandname, int uid, int pid, int arg1, int arg2, int arg3, int ret)
 {
 	char audit_type[32];
@@ -190,11 +239,16 @@ void PreLog(struct nlmsghdr* nlh) {
 	switch (op) {
 	case __NR_connect:
 		Log_Connect(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
-		//printf("connect\n");
+		break;
+	case __NR_bind:
+		Log_Bind(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		break;
+	case __NR_sendto:
+	case __NR_recvfrom:
+		Log_SendOrRecv(op,commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_socket:
 		Log_Socket(commandname, uid, pid, arg1, arg2, arg3, ret);
-		//printf("socket\n");
 		break;
 	case __NR_execve:
 	case __NR_openat:
@@ -203,7 +257,7 @@ void PreLog(struct nlmsghdr* nlh) {
 	case __NR_close:
 	case __NR_read:
 	case __NR_mknodat:
-		Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		//Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	}
 }

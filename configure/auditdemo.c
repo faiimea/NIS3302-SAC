@@ -51,8 +51,8 @@ void Log_Open(int operation,char *commandname,int uid, int pid, char *file_path,
 
 	strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t) );
 	printf("%s\n",file_path);
-	//fprintf(logfile,"%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
-	//printf("%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	fprintf(logfile,"%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
+	printf("%s:%s(%d) %s(%d) %s \"%s\" %s %s\n",audit_type,username,uid,commandname,pid,logtime,file_path,opentype, openresult);
 }
 
 void Log_file(int operation, char *commandname,int uid, int pid, char *file_path, int arg1,int arg2,int arg3,int ret)
@@ -127,8 +127,8 @@ void Log_Connect(char *commandname,int uid, int pid,char*  buffer,int port_int, 
     strcpy(username, pwinfo->pw_name);
 
     strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
-    fprintf(logfile, "%s :%s(%d) %s(%d) %s %s:%d %s\n", audit_type,username, uid,commandname, pid,logtime, ip_str, port, connectresult);
-	printf("%s:%s(%d) %s(%d) %s %s:%d %s\n", audit_type,username, uid,commandname, pid,logtime, ip_str, port, connectresult);
+    fprintf(logfile, "%s :%s(%d) %s(%d) %s  %s:%d %s\n", audit_type,username, uid,commandname, pid,logtime, ip_str, port, connectresult);
+	printf("%s:%s(%d) %s(%d) %s ip= %s:port= %d %s\n", audit_type,username, uid,commandname, pid,logtime, ip_str, port, connectresult);
 }
 
 void Log_Socket(char *commandname,int uid, int pid,  int arg1,int arg2,int arg3,int ret)

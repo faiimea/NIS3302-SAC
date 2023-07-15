@@ -257,7 +257,7 @@ void PreLog(struct nlmsghdr* nlh) {
 	case __NR_close:
 	case __NR_read:
 	case __NR_mknodat:
-		//Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	}
 }

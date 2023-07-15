@@ -55,6 +55,8 @@ int AuditReboot(struct pt_regs* regs, int ret);
 int AuditSocket(struct pt_regs* regs, int ret, int a, int b, int c);
 int Auditfinitmodule(char* pathname, int ret);
 int Auditdeletemodule(char* modulename, int ret);
+int Auditmount(char* source, char* filesystemtype, char* target, int ret);
+int Auditumount(char* infofile, char* mountfile, int ret);
 
 
 void get_fullname(const char* pathname, char* fullname);
@@ -151,13 +153,30 @@ void print_ip_address(const unsigned int* ip)
 asmlinkage long hacked_openat(struct pt_regs* regs) {
 
     long ret;
-    char buffer_open[PATH_MAX];
-    long nbytes;
+    char buffer[PATH_MAX];
+    unsigned long ino = 0;
+    uid_t uid = 0;
+    int index, f_type = 0;
+
+
+
     ret = orig_openat(regs);
-    nbytes = strncpy_from_user(buffer_open, (char*)regs->si, PATH_MAX);
-    AuditOpenat(regs, buffer_open, ret, path);
+
+    if (ret >= 0)get_info_from_fd(ret, &ino, &uid, &f_type, buffer);
+
+    index = 0;
+    while (buffer[index] != '\0') {
+        if (buffer[index] == '/') {
+            if (buffer[index + 1] == '.') { return ret; }
+        }
+        index++;
+    }
+
+    AuditOpenat(regs, buffer, ret);
+
     return ret;
 }
+
 
 asmlinkage long hacked_reboot(struct pt_regs* regs) {
     long ret = 0;
@@ -348,12 +367,15 @@ asmlinkage long hacked_finitmodule(struct pt_regs* regs)
         printk("ModuleInstalled:%s\n", buffer);
         Auditfinitmodule(buffer, ret);
     }
+
+
     return ret;
 }
 
 asmlinkage long hacked_deletemodule(struct pt_regs* regs) {
     long ret;
     char buffer[PATH_MAX];
+
 
     strncpy_from_user(buffer, (char*)regs->di, PATH_MAX);
     ret = orig_deletemodule(regs);
@@ -366,6 +388,47 @@ asmlinkage long hacked_deletemodule(struct pt_regs* regs) {
 
     return ret;
 }
+
+asmlinkage long hacked_mount(struct pt_regs* regs) {
+    long ret = 0;
+    char source[PATH_MAX], filesystemtype[PATH_MAX], target[PATH_MAX];
+
+    strncpy_from_user(source, (char*)regs->si, PATH_MAX);
+    strncpy_from_user(filesystemtype, (char*)regs->dx, PATH_MAX);
+    strncpy_from_user(target, (char*)regs->di, PATH_MAX);
+
+    ret = orig_mount(regs);
+
+    if (ret == 0) {
+        printk("Mount:%s|%s|%s|%ld\n", source, filesystemtype, target, ret);
+        Auditmount(source, filesystemtype, target, ret);
+    }
+    else { printk(KERN_ERR "Mount Failed to Resolve\n"); }
+
+
+    return ret;
+}
+
+
+asmlinkage long hacked_umount(struct pt_regs* regs) {
+    long ret = 0;
+    char infofile[PATH_MAX], mountfile[PATH_MAX];
+
+    unsigned long ino = 0;
+    uid_t uid = 0;
+    int f_type = 0;
+
+
+    get_info_from_fd(regs->si, &ino, &uid, &f_type, infofile);
+    strncpy_from_user(mountfile, (char*)regs->di, PATH_MAX);
+    ret = orig_umount(regs);
+
+    printk("Umount:%ld|%s|%s\n", ret, infofile, mountfile);
+
+    Auditumount(infofile, mountfile, ret);
+    return ret;
+}
+
 
 
 

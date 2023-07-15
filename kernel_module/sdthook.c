@@ -40,7 +40,7 @@ module_param(path, charp, S_IRUSR);
 
 demo_sys_call_ptr_t* get_syscall_table(void);
 
-int AuditOpenat(struct pt_regs*, char* pathname, int ret, char* path);
+int AuditOpenat(struct pt_regs*, char* pathname, int ret);
 int AuditConnect(struct pt_regs* regs, char* netbuf, int ret);
 int AuditBind(struct pt_regs* regs, char* netbuf, int ret);
 int AuditSendto(struct pt_regs* regs, char* netbuf, int ret);

@@ -40,7 +40,7 @@ module_param(path, charp, S_IRUSR);
 
 demo_sys_call_ptr_t* get_syscall_table(void);
 
-int AuditOpenat(struct pt_regs*, char* pathname, int ret, char* path);
+int AuditOpenat(struct pt_regs*, char* pathname, int ret);
 int AuditConnect(struct pt_regs* regs, char* netbuf, int ret);
 int AuditBind(struct pt_regs* regs, char* netbuf, int ret);
 int AuditSendto(struct pt_regs* regs, char* netbuf, int ret);
@@ -81,6 +81,8 @@ sys_call_t orig_listen = NULL;
 sys_call_t orig_accept = NULL;
 sys_call_t orig_sendto = NULL;
 sys_call_t orig_recvfrom= NULL;
+sys_call_t orig_mount=NULL;
+sys_call_t orig_umount=NULL;
 
 unsigned int level;
 pte_t* pte;
@@ -450,6 +452,8 @@ static int __init audit_init(void) {
     orig_bind = (sys_call_t)sys_call_table[__NR_bind];
     orig_sendto = (sys_call_t)sys_call_table[__NR_sendto];
     orig_recvfrom = (sys_call_t)sys_call_table[__NR_recvfrom];
+    orig_mount = (sys_call_t) sys_call_table[__NR_mount];
+    orig_umount = (sys_call_t) sys_call_table[__NR_umount2];
     pte = lookup_address((unsigned long)sys_call_table, &level);
     set_pte_atomic(pte, pte_mkwrite(*pte));
     sys_call_table[__NR_connect] = (demo_sys_call_ptr_t)hacked_connect;
@@ -468,6 +472,8 @@ static int __init audit_init(void) {
     sys_call_table[__NR_listen] = (demo_sys_call_ptr_t)hacked_listen;
     sys_call_table[__NR_sendto] = (demo_sys_call_ptr_t)hacked_sendto;
     sys_call_table[__NR_recvfrom] = (demo_sys_call_ptr_t)hacked_recvfrom;
+    sys_call_table[__NR_mount] = (demo_sys_call_ptr_t) hacked_mount;
+    sys_call_table[__NR_umount2] = (demo_sys_call_ptr_t) hacked_umount;
     set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
     netlink_init();
     return 0;
@@ -492,6 +498,8 @@ static void __exit audit_exit(void) {
     sys_call_table[__NR_listen] = (demo_sys_call_ptr_t)orig_listen;
     sys_call_table[__NR_sendto] = (demo_sys_call_ptr_t)orig_sendto;
     sys_call_table[__NR_recvfrom] = (demo_sys_call_ptr_t)orig_recvfrom;
+    sys_call_table[__NR_mount] = (demo_sys_call_ptr_t)orig_mount;
+    sys_call_table[__NR_umount2] = (demo_sys_call_ptr_t)orig_umount;
     set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));
     netlink_release();
 }

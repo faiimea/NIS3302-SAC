@@ -10,5 +10,7 @@ gcc -o auditdemo auditdemo.c config.c Func.c -I ./
 
 ./auditdemo -c 进入编辑模式
 
+在kernel文件中有可运行的脚本，编辑模式script.sh
+
 ## TODO:
 ...

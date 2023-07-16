@@ -1,7 +1,5 @@
 #include"task.h"
-#include "formmenu.h"
-
-static sqlite3 *db;
+#include <QWidget>
 int sock_fd;
 struct msghdr msg;
 struct nlmsghdr *nlh = NULL;
@@ -10,19 +8,17 @@ struct iovec iov;
 
 #define NETLINK_TEST 29
 #define MAX_PAYLOAD 1024  /* maximum payload size*/
-
 void solve(){
     char buff[110];
         //void killdeal_func();
         char logpath[32];
-        //signal(SIGTERM,kill_func);
+        signal(SIGTERM,kill_func);
         sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_TEST);
         nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
         memset(nlh, 0, NLMSG_SPACE(MAX_PAYLOAD));
-
+        insert_log("ff","asd","asdasd","jljl","Success",6,7);
+        insert_log("ff","ff","asjlk","jkaslkdljl","Success",0,9);
         sendpid(getpid());
-
-
         /* open the log file at the begining of daemon, in case of this operation causes deadlock */
 
         //Loop to get message
@@ -30,9 +26,9 @@ void solve(){
 
             recvmsg(sock_fd, &msg, 0);
             //PreLog(nlh);
-            task t;
 
         }
+
         ::close(sock_fd);
         free(nlh);
 
@@ -43,7 +39,6 @@ void _init_database ()
 {
     int rc;
     rc = sqlite3_open("database.db", &db);
-
     if( rc ) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
         sqlite3_close(db);
@@ -54,6 +49,8 @@ void _init_database ()
 
     return;
 }
+
+
 
 void create_users()
 {
@@ -68,7 +65,7 @@ void create_users()
 
     if( rc != SQLITE_OK ){
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        sqlite3_free(zErrMsg);
+
     } else {
         fprintf(stdout, "Table created successfully\n");
     }
@@ -86,7 +83,7 @@ void remove_users()
 
     if( rc != SQLITE_OK ){
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        sqlite3_free(zErrMsg);
+
     } else {
         fprintf(stdout, "Table created successfully\n");
 
@@ -125,6 +122,7 @@ void insert_users(char username[],char password[])
 
 void delete_users(char username[],char password[])
 {
+    mu.lock();
     char sql[200]="DELETE FROM USERS WHERE USERNAME='";
     char gap[20]="' AND PASSWORD='";
     char tail[25]="';";
@@ -146,6 +144,7 @@ void delete_users(char username[],char password[])
            fprintf(stdout, "Records deleted successfully\n");
         printf("Deleted %d rows.\n", count);
     }
+    mu.unlock();
 
 }
 
@@ -168,9 +167,11 @@ int search_users(char username[],char password[])
     int n_rows=0;
     int rc = sqlite3_exec(db, sql, count_callback, &n_rows,  &zErrMsg);
     if (rc != SQLITE_OK) {
-        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        //fprintf(stderr, "SQL error: %s\n", zErrMsg);
+
+
         sqlite3_free(zErrMsg);
-        sqlite3_close(db);
+       // sqlite3_close(db);
         return 0;
     } else if (n_rows == 0) return 0;
     else
@@ -274,6 +275,7 @@ void insert_log(char username[],char logtime[],char filepath[],char commandname[
 {
     char *zErrMsg = 0;
     int rc;
+    mu.lock();
 
     // 开始事务
     rc=sqlite3_exec(db, "BEGIN TRANSACTION", 0, 0, &zErrMsg);
@@ -282,7 +284,11 @@ void insert_log(char username[],char logtime[],char filepath[],char commandname[
         sqlite3_free(zErrMsg);
     } ;
     // 执行插入操作
-    char *sql = "INSERT INTO alex (PID,LOGTIME,UID,USERNAME,FILEPATH,COMMANDNAME,RESULT) VALUES (?, ?, ?,?,?,?,?);";
+    char sql1[300] = "INSERT INTO ";
+    char sql2[300]="(PID,LOGTIME,UID,USERNAME,FILEPATH,COMMANDNAME,RESULT) VALUES (?, ?, ?,?,?,?,?);";
+    strcat(sql1,username);
+    strcat(sql1,sql2);
+    char *sql=sql1;
     sqlite3_stmt *stmt;
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, 0);
      if( rc != SQLITE_OK ){
@@ -304,7 +310,7 @@ void insert_log(char username[],char logtime[],char filepath[],char commandname[
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
         fprintf(stderr, "Cannot execute statement: %s\n", sqlite3_errmsg(db));
-
+        mu.unlock();
         return ;
     }
 
@@ -313,26 +319,21 @@ void insert_log(char username[],char logtime[],char filepath[],char commandname[
     sqlite3_exec(db, "COMMIT TRANSACTION", 0, 0, 0);
     sqlite3_finalize(stmt);
     printf("insert successfully!\n");
+    mu.unlock();
     return ;
 }
 
-void delete_log(char username[],int pid )
+
+void delete_log(char *username,int pid )
 {
-    char sql[200]="DELETE FROM ";
-    char mid[100]= " WHERE pid=";
-
-    char tail[25]=";";
-    char *zErrMsg=0;
-    int count = 0;
-    strcat(sql,username);
-    strcat(sql,mid);
-    char pids[100];
-    sprintf(pids,"%d",pid);
-    strcat(sql,pids);
-
+    int count=0;
+    char *zErrMsg;
+    char *sql=sqlite3_mprintf("DELETE FROM %s WHERE PID = %d;",username,pid);
 
     printf(sql);
-    int rc = sqlite3_exec(db, sql, count_callback, &count, &zErrMsg);
+    mu.lock();
+    //sqlite3_open("database.db", &db);
+    int rc = sqlite3_exec(db, sql,0, &count, &zErrMsg);
 
     if( rc != SQLITE_OK ){
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
@@ -341,6 +342,8 @@ void delete_log(char username[],int pid )
         fprintf(stdout, "Records deleted successfully\n");
         printf("Deleted %d rows.\n", count);
     }
+    //sqlite3_close(db);
+    mu.unlock();
 
 }
 static int callback_search(void *data, int argc, char **argv, char **azColName) {
@@ -359,7 +362,7 @@ static int count_callback(void* data, int n_cols, char** values, char** columns)
    return 0;
 }
 
-void kill_func()
+void kill_func(int sig)
 {
     printf("The process is killed! \n");
     close(sock_fd);
@@ -367,3 +370,5 @@ void kill_func()
         free(nlh);
     exit(0);
 }
+
+

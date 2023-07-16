@@ -20,6 +20,12 @@ public:
     explicit MainWidget(QWidget *parent = 0);
     ~MainWidget();
     QMap<QString, QByteArray> mapUserAndHash;
+    Ui::MainWidget *ui;
+
+    FormChangePassword *formChildChangePassword;
+
+    FormCreateNewUser *formChildCreatorNewUser;
+    FormMenu *formChildMenu;
 
 signals:
 
@@ -43,12 +49,7 @@ private slots:
 
 
 private:
-    Ui::MainWidget *ui;
 
-    FormChangePassword *formChildChangePassword;
-
-    FormCreateNewUser *formChildCreatorNewUser;
-    FormMenu *formChildMenu;
 
 
 

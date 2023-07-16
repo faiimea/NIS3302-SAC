@@ -142,6 +142,10 @@ void MainWidget::on_pushButtonSignIn_clicked()
 
         this->close();
     }
+    else {
+        std::string output = "notify-send --urgency=critical \"Username or Password is wrong.\"";
+        system(output.c_str());
+    }
 }
 
 void MainWidget::on_pushButtonSignUp_clicked()

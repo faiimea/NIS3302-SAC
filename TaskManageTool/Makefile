@@ -14,10 +14,10 @@ EQ            = =
 
 CC            = gcc
 CXX           = g++
-DEFINES       = -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
+DEFINES       = -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_SQL_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -O2 -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -O2 -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I. -I. -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
+INCPATH       = -I. -I. -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
 QMAKE         = /usr/lib/qt5/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -57,7 +57,6 @@ SOURCES       = api.cpp \
 		formchangepassword.cpp \
 		formcreatenewuser.cpp \
 		formmenu.cpp \
-		main.cpp \
 		mainwidget.cpp \
 		task.cpp moc_formaddrule.cpp \
 		moc_formchangepassword.cpp \
@@ -69,7 +68,6 @@ OBJECTS       = api.o \
 		formchangepassword.o \
 		formcreatenewuser.o \
 		formmenu.o \
-		main.o \
 		mainwidget.o \
 		task.o \
 		moc_formaddrule.o \
@@ -161,13 +159,11 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		formcreatenewuser.h \
 		formmenu.h \
 		mainwidget.h \
-		task.h \
-		api.cpp \
+		task.h api.cpp \
 		formaddrule.cpp \
 		formchangepassword.cpp \
 		formcreatenewuser.cpp \
 		formmenu.cpp \
-		main.cpp \
 		mainwidget.cpp \
 		task.cpp
 QMAKE_TARGET  = TaskManageTool
@@ -179,7 +175,7 @@ first: all
 ####### Build rules
 
 TaskManageTool: ui_formaddrule.h ui_formchangepassword.h ui_formcreatenewuser.h ui_formmenu.h ui_mainwidget.h $(OBJECTS)  
-	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS) -g
+	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 Makefile: TaskManageTool.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf \
@@ -356,7 +352,7 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents api.h formaddrule.h formchangepassword.h formcreatenewuser.h formmenu.h mainwidget.h task.h $(DISTDIR)/
-	$(COPY_FILE) --parents api.cpp formaddrule.cpp formchangepassword.cpp formcreatenewuser.cpp formmenu.cpp main.cpp mainwidget.cpp task.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents api.cpp formaddrule.cpp formchangepassword.cpp formcreatenewuser.cpp formmenu.cpp mainwidget.cpp task.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents formaddrule.ui formchangepassword.ui formcreatenewuser.ui formmenu.ui mainwidget.ui $(DISTDIR)/
 
 
@@ -394,36 +390,39 @@ compiler_moc_header_clean:
 	-$(DEL_FILE) moc_formaddrule.cpp moc_formchangepassword.cpp moc_formcreatenewuser.cpp moc_formmenu.cpp moc_mainwidget.cpp
 moc_formaddrule.cpp: formaddrule.h \
 		task.h \
+		api.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formaddrule.h -o moc_formaddrule.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formaddrule.h -o moc_formaddrule.cpp
 
 moc_formchangepassword.cpp: formchangepassword.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formchangepassword.h -o moc_formchangepassword.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formchangepassword.h -o moc_formchangepassword.cpp
 
 moc_formcreatenewuser.cpp: formcreatenewuser.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formcreatenewuser.h -o moc_formcreatenewuser.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formcreatenewuser.h -o moc_formcreatenewuser.cpp
 
 moc_formmenu.cpp: formmenu.h \
 		task.h \
+		api.h \
 		formaddrule.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formmenu.h -o moc_formmenu.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include formmenu.h -o moc_formmenu.cpp
 
 moc_mainwidget.cpp: mainwidget.h \
 		formchangepassword.h \
 		formcreatenewuser.h \
 		formmenu.h \
 		task.h \
+		api.h \
 		formaddrule.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include mainwidget.h -o moc_mainwidget.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/zts/c++code/2022-2023-3/TaskManageTool/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/home/zts/c++code/2022-2023-3/TaskManageTool -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include mainwidget.h -o moc_mainwidget.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
@@ -467,6 +466,7 @@ api.o: api.cpp api.h
 
 formaddrule.o: formaddrule.cpp formaddrule.h \
 		task.h \
+		api.h \
 		ui_formaddrule.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o formaddrule.o formaddrule.cpp
 
@@ -481,30 +481,27 @@ formcreatenewuser.o: formcreatenewuser.cpp formcreatenewuser.h \
 
 formmenu.o: formmenu.cpp formmenu.h \
 		task.h \
+		api.h \
 		formaddrule.h \
-		ui_formmenu.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o formmenu.o formmenu.cpp
-
-main.o: main.cpp mainwidget.h \
+		ui_formmenu.h \
+		main.cpp \
+		mainwidget.h \
 		formchangepassword.h \
-		formcreatenewuser.h \
-		formmenu.h \
-		task.h \
-		formaddrule.h \
-		api.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
+		formcreatenewuser.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o formmenu.o formmenu.cpp
 
 mainwidget.o: mainwidget.cpp mainwidget.h \
 		formchangepassword.h \
 		formcreatenewuser.h \
 		formmenu.h \
 		task.h \
+		api.h \
 		formaddrule.h \
-		ui_mainwidget.h \
-		api.h
+		ui_mainwidget.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwidget.o mainwidget.cpp
 
-task.o: task.cpp task.h
+task.o: task.cpp task.h \
+		api.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o task.o task.cpp
 
 moc_formaddrule.o: moc_formaddrule.cpp 

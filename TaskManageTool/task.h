@@ -22,7 +22,9 @@
 #include <thread>
 #include <QApplication>
 #include "api.h"
-
+#include <mutex>
+static sqlite3 *db;
+static std::mutex mu;
 struct task{
     QString Username;
     QString Commondname;
@@ -56,13 +58,9 @@ void print_ip_address(unsigned int ip);
 void sendpid(unsigned int pid);
 
 void insert_log(char username[],char logtime[],char filepath[],char commandname[],char result[],int pid,int uid );
-
 void delete_log(char username[],int pid );
-void kill_func();
-
-
-
-
-
+void kill_func(int sig);
+static int count_callback(void* data, int n_cols, char** values, char** columns);
+static int callback_search(void *data, int argc, char **argv, char **azColName);
 #endif // TASK_H
 

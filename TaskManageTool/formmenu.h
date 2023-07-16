@@ -5,7 +5,7 @@
 #include "task.h"
 #include "formaddrule.h"
 #include <QTimer>
-
+#include <QDateTime>
 namespace Ui {
 class FormMenu;
 }
@@ -17,9 +17,21 @@ class FormMenu : public QWidget
 public:
     explicit FormMenu(QWidget *parent = 0);
     ~FormMenu();
-    void update(task t);
+    void update();
     void Init();
+    friend void copy(char a[],FormMenu *b);
+    QTimer *m_myTimer = new QTimer();
 
+    QString User;
+    void show_all_log(char username[]);
+
+    FormAddRule *formChildAddRule;
+
+    QString pwdOfUserTxt;
+
+    Ui::FormMenu *ui;
+
+    QMap<int, task> *m;
 private slots:
 
     void TimerResponse();
@@ -41,24 +53,11 @@ signals:
     void sendAddButtonPressed(QMap<int, task> *m);
 
 private:
-
-    QTimer *m_myTimer = new QTimer();
-
-    QString User;
-
-
-    FormAddRule *formChildAddRule;
-
-    QString pwdOfUserTxt;
-
-    Ui::FormMenu *ui;
-
-    QMap<int, task> *m;
-
-
+    char *sql;
 };
 
-static int callback_search(void *data, int argc, char **argv, char **azColName);
-static int count_callback(void* data, int n_cols, char** values, char** columns);
+void copy(char **a,FormMenu *b);
+
+static int back(void *data, int argc, char **argv, char **azColName);
 
 #endif // FORMMENU_H

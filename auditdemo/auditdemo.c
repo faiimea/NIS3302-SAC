@@ -277,27 +277,133 @@ void killdeal_func()
 }
 
 
+#include <stdio.h>
+#include <string.h>
+
+// 假设这些函数的实现已经存在
+
+int Change_Conf(){
+    const char* config_file = "./config.conf";
+    LoadConfigFile(config_file);
+    
+    char input[100];
+    char itemName[50];
+    char itemValue[50];
+    
+    while(1){
+        printf("请输入要修改的配置项的编号 (输入q保存并退出): ");
+        scanf("%s", input);
+        
+        if (strcmp(input, "q") == 0 || strcmp(input, "Q") == 0){
+            // 输入q时保存配置项并退出
+            WriteNewConfigFile(config_file);
+            printf("配置项已保存并退出。\n");
+            break;
+        }
+        
+        int itemIndex = atoi(input);
+        
+        switch(itemIndex){
+            case 1:
+                strcpy(itemName, "bind");
+                break;
+            case 2:
+                strcpy(itemName, "sendto");
+                break;
+            case 3:
+                strcpy(itemName, "recvfrom");
+                break;
+            case 4:
+                strcpy(itemName, "socket");
+                break;
+            case 5:
+                strcpy(itemName, "finit_module");
+                break;
+            case 6:
+                strcpy(itemName, "delete_module");
+                break;
+            case 7:
+                strcpy(itemName, "mount");
+                break;
+            case 8:
+                strcpy(itemName, "umount2");
+                break;
+            case 9:
+                strcpy(itemName, "execve");
+                break;
+            case 10:
+                strcpy(itemName, "openat");
+                break;
+            case 11:
+                strcpy(itemName, "unlinkat");
+                break;
+            case 12:
+                strcpy(itemName, "write");
+                break;
+            case 13:
+                strcpy(itemName, "close");
+                break;
+            case 14:
+                strcpy(itemName, "read");
+                break;
+            case 15:
+                strcpy(itemName, "mknodat");
+                break;
+            default:
+                printf("无效的选择，请重新输入。\n");
+                continue;
+        }
+        
+        printf("请选择要设置的值 (0 或 1): ");
+        scanf("%s", input);
+        
+        if (strcmp(input, "0") == 0){
+            strcpy(itemValue, "0");
+        }
+        else if (strcmp(input, "1") == 0){
+            strcpy(itemValue, "1");
+        }
+        else{
+            printf("无效的选择，请重新输入。\n");
+            continue;
+        }
+        
+        // 修改配置项的值
+        if (ModifyConfigItemContent(itemName, itemValue) == -1){
+            // 如果修改失败，则尝试添加新的配置项
+            if (AddConfigItem(itemName, itemValue) == -1){
+                printf("修改或添加配置项失败，请稍后重试。\n");
+                continue;
+            }
+        }
+        
+        printf("配置项已修改。\n");
+    }
+    
+    return 0;
+}
+
 
 void PreLog(struct nlmsghdr* nlh) {
 	const char* config_file = "./config.conf";
 	LoadConfigFile(config_file);
 
 	const int Audit_Connect = GetConfigIntDefault("connect",1);
-	// const int Audit_Bind = GetConfigIntDefault("bind", 1);
-	// const int Audit_Sendto = GetConfigIntDefault("sendto", 1);
-	// const int Audit_Recvfrom = GetConfigIntDefault("recvfrom", 1);
-	// const int Audit_Socket = GetConfigIntDefault("socket", 1);
-	// const int Audit_Finit_Module = GetConfigIntDefault("finit_module", 1);
-	// const int Audit_Delete_Module = GetConfigIntDefault("delete_module", 1);
-	// const int Audit_Mount = GetConfigIntDefault("mount", 1);
-	// const int Audit_Umount2 = GetConfigIntDefault("umount2", 1);
-	// const int Audit_Execve = GetConfigIntDefault("execve", 1);
-	// const int Audit_Openat = GetConfigIntDefault("openat", 1);
-	// const int Audit_Unlinkat = GetConfigIntDefault("unlinkat", 1);
-	// const int Audit_Write = GetConfigIntDefault("write", 1);
-	// const int Audit_Close = GetConfigIntDefault("close", 1);
-	// const int Audit_Read = GetConfigIntDefault("read", 1);
-	// const int Audit_Mknodat = GetConfigIntDefault("mknodat", 1);
+	const int Audit_Bind = GetConfigIntDefault("bind", 1);
+	const int Audit_Sendto = GetConfigIntDefault("sendto", 1);
+	const int Audit_Recvfrom = GetConfigIntDefault("recvfrom", 1);
+	const int Audit_Socket = GetConfigIntDefault("socket", 1);
+	const int Audit_Finit_Module = GetConfigIntDefault("finit_module", 1);
+	const int Audit_Delete_Module = GetConfigIntDefault("delete_module", 1);
+	const int Audit_Mount = GetConfigIntDefault("mount", 1);
+	const int Audit_Umount2 = GetConfigIntDefault("umount2", 1);
+	const int Audit_Execve = GetConfigIntDefault("execve", 1);
+	const int Audit_Openat = GetConfigIntDefault("openat", 1);
+	const int Audit_Unlinkat = GetConfigIntDefault("unlinkat", 1);
+	const int Audit_Write = GetConfigIntDefault("write", 1);
+	const int Audit_Close = GetConfigIntDefault("close", 1);
+	const int Audit_Read = GetConfigIntDefault("read", 1);
+	const int Audit_Mknodat = GetConfigIntDefault("mknodat", 1);
 
 	unsigned int uid, pid, ret, op;
 	int arg1, arg2, arg3;
@@ -316,27 +422,27 @@ void PreLog(struct nlmsghdr* nlh) {
 	switch (op) {
 	case __NR_connect:
 		if(Audit_Connect==1)	printf("INFO:AuditConnect=1\n");
-		//Log_Connect(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		Log_Connect(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_bind:
-		//Log_Bind(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		Log_Bind(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_sendto:
 	case __NR_recvfrom:
-		//Log_SendOrRecv(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		Log_SendOrRecv(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_socket:
-		//Log_Socket(commandname, uid, pid, arg1, arg2, arg3, ret);
+		Log_Socket(commandname, uid, pid, arg1, arg2, arg3, ret);
 		break;
 	case __NR_finit_module:
 	case __NR_delete_module:
-		//Log_module(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer);
+		Log_module(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer);
 		break;
 	case __NR_mount:
 	case __NR_umount2:
 		redundancy1 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + (int*)NLMSG_DATA(nlh));
 		redundancy2 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + strlen(redundancy1) / 4 + (int*)NLMSG_DATA(nlh));
-		//Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
+		Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
 	case __NR_execve:
 	case __NR_openat:
 	case __NR_unlinkat:
@@ -344,25 +450,33 @@ void PreLog(struct nlmsghdr* nlh) {
 	case __NR_close:
 	case __NR_read:
 	case __NR_mknodat:
-		//Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	}
 }
-
-
-
 
 int main(int argc, char* argv[]) {
 	char buff[110];
 	//void killdeal_func();
 	// Todo: input argc = xx to make it in conf
 	char logpath[32];
-	if (argc == 1) strcpy(logpath, "./log");
-	else if (argc == 2) strncpy(logpath, argv[1], 32);
-	else {
-		printf("commandline parameters error! please check and try it! \n");
-		exit(1);
-	}
+
+	if (argc == 1) {
+        strcpy(logpath, "./log");
+    }
+    else if (argc == 2) {
+        if (strcmp(argv[1], "-l") == 0) {
+            strncpy(logpath, argv[1], 32);
+        }
+		else if (strcmp(argv[1], "-c") == 0) {
+            Change_Conf();
+            exit(0);
+        }
+    }
+    else {
+        printf("命令行参数错误！请检查并重试。\n");
+        exit(1);
+    }
 
 
 	signal(SIGTERM, killdeal_func);

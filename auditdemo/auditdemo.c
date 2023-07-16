@@ -289,6 +289,24 @@ int Change_Conf(){
     char input[100];
     char itemName[50];
     char itemValue[50];
+
+	printf("\n===== 配置项列表 =====\n");
+	printf("1. audit_bind\n");
+	printf("2. audit_sendto\n");
+	printf("3. audit_recvfrom\n");
+	printf("4. audit_socket\n");
+	printf("5. audit_finit_module\n");
+	printf("6. audit_delete_module\n");
+	printf("7. audit_mount\n");
+	printf("8. audit_umount2\n");
+	printf("9. audit_execve\n");
+	printf("10. audit_openat\n");
+	printf("11. audit_unlinkat\n");
+	printf("12. audit_write\n");
+	printf("13. audit_close\n");
+	printf("14. audit_read\n");
+	printf("15. audit_mknodat\n");
+	printf("q. 保存并退出\n");
     
     while(1){
         printf("请输入要修改的配置项的编号 (输入q保存并退出): ");

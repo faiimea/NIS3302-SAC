@@ -15,6 +15,11 @@
 #include <time.h>
 #include <signal.h>
 #include <pwd.h>
+#include "global.h"
+#include "config.h"
+#include "Func.h"
+
+
 
 #define TM_FMT "%Y-%m-%d %H:%M:%S"
 
@@ -202,8 +207,8 @@ void Log_module(int operation, char* commandname, int uid, int pid, int arg1, in
 
 void Log_mountANDunmount(int op, char* commandname, int uid, int pid, int arg1, int arg2, int arg3, int ret, char* buffer, char* redundancy1, char* redundancy2) {
 	char audit_type[32];
-	if (operation == __NR_mount) { strcpy(audit_type, "mount"); }
-	if (operation == __NR_umount2) { strcpy(audit_type, "deletemodule"); }
+	if (op == __NR_mount) { strcpy(audit_type, "mount"); }
+	if (op == __NR_umount2) { strcpy(audit_type, "deletemodule"); }
 	char logtime[64];
 	char username[32];
 	struct passwd* pwinfo;
@@ -274,6 +279,26 @@ void killdeal_func()
 
 
 void PreLog(struct nlmsghdr* nlh) {
+	const char* config_file = "./config.conf";
+	LoadConfigFile(config_file);
+
+	const int Audit_Connect = GetConfigIntDefault("connect",1);
+	// const int Audit_Bind = GetConfigIntDefault("bind", 1);
+	// const int Audit_Sendto = GetConfigIntDefault("sendto", 1);
+	// const int Audit_Recvfrom = GetConfigIntDefault("recvfrom", 1);
+	// const int Audit_Socket = GetConfigIntDefault("socket", 1);
+	// const int Audit_Finit_Module = GetConfigIntDefault("finit_module", 1);
+	// const int Audit_Delete_Module = GetConfigIntDefault("delete_module", 1);
+	// const int Audit_Mount = GetConfigIntDefault("mount", 1);
+	// const int Audit_Umount2 = GetConfigIntDefault("umount2", 1);
+	// const int Audit_Execve = GetConfigIntDefault("execve", 1);
+	// const int Audit_Openat = GetConfigIntDefault("openat", 1);
+	// const int Audit_Unlinkat = GetConfigIntDefault("unlinkat", 1);
+	// const int Audit_Write = GetConfigIntDefault("write", 1);
+	// const int Audit_Close = GetConfigIntDefault("close", 1);
+	// const int Audit_Read = GetConfigIntDefault("read", 1);
+	// const int Audit_Mknodat = GetConfigIntDefault("mknodat", 1);
+
 	unsigned int uid, pid, ret, op;
 	int arg1, arg2, arg3;
 	char* buffer;
@@ -290,27 +315,28 @@ void PreLog(struct nlmsghdr* nlh) {
 	buffer = (char*)(7 + 16 / 4 + (int*)NLMSG_DATA(nlh));
 	switch (op) {
 	case __NR_connect:
-		Log_Connect(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		if(Audit_Connect==1)	printf("INFO:AuditConnect=1\n");
+		//Log_Connect(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_bind:
-		Log_Bind(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		//Log_Bind(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_sendto:
 	case __NR_recvfrom:
-		Log_SendOrRecv(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		//Log_SendOrRecv(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_socket:
-		Log_Socket(commandname, uid, pid, arg1, arg2, arg3, ret);
+		//Log_Socket(commandname, uid, pid, arg1, arg2, arg3, ret);
 		break;
 	case __NR_finit_module:
 	case __NR_delete_module:
-		Log_module(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer);
+		//Log_module(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer);
 		break;
 	case __NR_mount:
 	case __NR_umount2:
 		redundancy1 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + (int*)NLMSG_DATA(nlh));
 		redundancy2 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + strlen(redundancy1) / 4 + (int*)NLMSG_DATA(nlh));
-		Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
+		//Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
 	case __NR_execve:
 	case __NR_openat:
 	case __NR_unlinkat:
@@ -318,7 +344,7 @@ void PreLog(struct nlmsghdr* nlh) {
 	case __NR_close:
 	case __NR_read:
 	case __NR_mknodat:
-		Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
+		//Log_file(op, commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	}
 }
@@ -329,6 +355,7 @@ void PreLog(struct nlmsghdr* nlh) {
 int main(int argc, char* argv[]) {
 	char buff[110];
 	//void killdeal_func();
+	// Todo: input argc = xx to make it in conf
 	char logpath[32];
 	if (argc == 1) strcpy(logpath, "./log");
 	else if (argc == 2) strncpy(logpath, argv[1], 32);

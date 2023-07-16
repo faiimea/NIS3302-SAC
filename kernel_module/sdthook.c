@@ -82,7 +82,6 @@ sys_call_t orig_accept = NULL;
 sys_call_t orig_sendto = NULL;
 sys_call_t orig_recvfrom= NULL;
 
-
 unsigned int level;
 pte_t* pte;
 
@@ -453,20 +452,20 @@ static int __init audit_init(void) {
     orig_recvfrom = (sys_call_t)sys_call_table[__NR_recvfrom];
     pte = lookup_address((unsigned long)sys_call_table, &level);
     set_pte_atomic(pte, pte_mkwrite(*pte));
-    // sys_call_table[__NR_connect] = (demo_sys_call_ptr_t)hacked_connect;
-    // sys_call_table[__NR_openat] = (demo_sys_call_ptr_t)hacked_openat;
-    // sys_call_table[__NR_reboot] = (demo_sys_call_ptr_t)hacked_reboot;
-    // sys_call_table[__NR_unlinkat] = (demo_sys_call_ptr_t)hacked_unlinkat;
-    // sys_call_table[__NR_execve] = (demo_sys_call_ptr_t)hacked_execve;
-    // sys_call_table[__NR_finit_module] = (demo_sys_call_ptr_t)hacked_finitmodule;
-    // sys_call_table[__NR_delete_module] = (demo_sys_call_ptr_t)hacked_deletemodule;
-    // sys_call_table[__NR_socket] = (demo_sys_call_ptr_t)hacked_socket;
-    // sys_call_table[__NR_read] = (demo_sys_call_ptr_t)hacked_read;
-    // sys_call_table[__NR_write] = (demo_sys_call_ptr_t)hacked_write;
-    // sys_call_table[__NR_close] = (demo_sys_call_ptr_t)hacked_close;
-    // sys_call_table[__NR_mknodat] = (demo_sys_call_ptr_t)hacked_mknodat;
-    // sys_call_table[__NR_bind] = (demo_sys_call_ptr_t)hacked_bind;
-    // sys_call_table[__NR_listen] = (demo_sys_call_ptr_t)hacked_listen;
+    sys_call_table[__NR_connect] = (demo_sys_call_ptr_t)hacked_connect;
+    sys_call_table[__NR_openat] = (demo_sys_call_ptr_t)hacked_openat;
+    sys_call_table[__NR_reboot] = (demo_sys_call_ptr_t)hacked_reboot;
+    sys_call_table[__NR_unlinkat] = (demo_sys_call_ptr_t)hacked_unlinkat;
+    sys_call_table[__NR_execve] = (demo_sys_call_ptr_t)hacked_execve;
+    sys_call_table[__NR_finit_module] = (demo_sys_call_ptr_t)hacked_finitmodule;
+    sys_call_table[__NR_delete_module] = (demo_sys_call_ptr_t)hacked_deletemodule;
+    sys_call_table[__NR_socket] = (demo_sys_call_ptr_t)hacked_socket;
+    sys_call_table[__NR_read] = (demo_sys_call_ptr_t)hacked_read;
+    sys_call_table[__NR_write] = (demo_sys_call_ptr_t)hacked_write;
+    sys_call_table[__NR_close] = (demo_sys_call_ptr_t)hacked_close;
+    sys_call_table[__NR_mknodat] = (demo_sys_call_ptr_t)hacked_mknodat;
+    sys_call_table[__NR_bind] = (demo_sys_call_ptr_t)hacked_bind;
+    sys_call_table[__NR_listen] = (demo_sys_call_ptr_t)hacked_listen;
     sys_call_table[__NR_sendto] = (demo_sys_call_ptr_t)hacked_sendto;
     sys_call_table[__NR_recvfrom] = (demo_sys_call_ptr_t)hacked_recvfrom;
     set_pte_atomic(pte, pte_clear_flags(*pte, _PAGE_RW));

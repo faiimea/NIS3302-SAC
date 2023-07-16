@@ -305,49 +305,49 @@ int Change_Conf(){
         
         switch(itemIndex){
             case 1:
-                strcpy(itemName, "bind");
+                strcpy(itemName, "audit_bind");
                 break;
             case 2:
-                strcpy(itemName, "sendto");
+                strcpy(itemName, "audit_sendto");
                 break;
             case 3:
-                strcpy(itemName, "recvfrom");
+                strcpy(itemName, "audit_recvfrom");
                 break;
             case 4:
-                strcpy(itemName, "socket");
+                strcpy(itemName, "audit_socket");
                 break;
             case 5:
-                strcpy(itemName, "finit_module");
+                strcpy(itemName, "audit_finit_module");
                 break;
             case 6:
-                strcpy(itemName, "delete_module");
+                strcpy(itemName, "audit_delete_module");
                 break;
             case 7:
-                strcpy(itemName, "mount");
+                strcpy(itemName, "audit_mount");
                 break;
             case 8:
-                strcpy(itemName, "umount2");
+                strcpy(itemName, "audit_umount2");
                 break;
             case 9:
-                strcpy(itemName, "execve");
+                strcpy(itemName, "audit_execve");
                 break;
             case 10:
-                strcpy(itemName, "openat");
+                strcpy(itemName, "audit_openat");
                 break;
             case 11:
-                strcpy(itemName, "unlinkat");
+                strcpy(itemName, "audit_unlinkat");
                 break;
             case 12:
-                strcpy(itemName, "write");
+                strcpy(itemName, "audit_write");
                 break;
             case 13:
-                strcpy(itemName, "close");
+                strcpy(itemName, "audit_close");
                 break;
             case 14:
-                strcpy(itemName, "read");
+                strcpy(itemName, "audit_read");
                 break;
             case 15:
-                strcpy(itemName, "mknodat");
+                strcpy(itemName, "audit_mknodat");
                 break;
             default:
                 printf("无效的选择，请重新输入。\n");

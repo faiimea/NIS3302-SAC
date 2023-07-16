@@ -37,6 +37,39 @@ typedef asmlinkage long (*sys_call_t)(struct pt_regs* regs);
 static char* path = "/home/faii/Desktop";
 module_param(path, charp, S_IRUSR);
 
+static int audit_connect = 1;
+module_param(audit_connect, int, S_IRUSR);
+static int audit_bind = 1;
+module_param(audit_bind, int, S_IRUSR);
+static int audit_sendto = 1;
+module_param(audit_sendto, int, S_IRUSR);
+static int audit_recvfrom = 1;
+module_param(audit_recvfrom, int, S_IRUSR);
+static int audit_socket = 1;
+module_param(audit_socket, int, S_IRUSR);
+static int audit_finit_module = 1;
+module_param(audit_finit_module, int, S_IRUSR);
+static int audit_delete_module = 1;
+module_param(audit_delete_module, int, S_IRUSR);
+static int audit_mount = 1;
+module_param(audit_mount, int, S_IRUSR);
+static int audit_umount2 = 1;
+module_param(audit_umount2, int, S_IRUSR);
+static int audit_execve = 1;
+module_param(audit_execve, int, S_IRUSR);
+static int audit_openat = 1;
+module_param(audit_openat, int, S_IRUSR);
+static int audit_unlinkat = 1;
+module_param(audit_unlinkat, int, S_IRUSR);
+static int audit_write = 1;
+module_param(audit_write, int, S_IRUSR);
+static int audit_close = 1;
+module_param(audit_close, int, S_IRUSR);
+static int audit_read = 1;
+module_param(audit_read, int, S_IRUSR);
+static int audit_mknodat = 1;
+module_param(audit_mknodat, int, S_IRUSR);
+
 
 demo_sys_call_ptr_t* get_syscall_table(void);
 

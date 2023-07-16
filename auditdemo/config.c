@@ -163,6 +163,14 @@ int WriteNewConfigFile(const char*pconfName)
     int i = 0;
     char line_buf[32+128+1] = "\0";
     char equal_char = '=';
+    FILE* script_file = fopen("../kernel_module/script.sh", "w");
+    if (script_file == NULL) {
+        printf("无法创建脚本文件\n");
+        close(new_fd);
+        return 0;
+    }
+    fprintf(script_file, "#!/bin/bash\n");
+    fprintf(script_file, "sudo insmod AuditModule.ko ");
     for(i=0; i < arr_curr_ind; i++)
     {
         if(*(ArrayConfig[i].ItemName) == '[')
@@ -171,8 +179,16 @@ int WriteNewConfigFile(const char*pconfName)
             equal_char = '=';
         sprintf(line_buf, "%s%c%s\n", ArrayConfig[i].ItemName, equal_char, ArrayConfig[i].ItemContent);
         write(new_fd, line_buf, strlen(line_buf));
+        int len=strlen(line_buf);
+        if (len > 0 && line_buf[len - 1] == '\n') {
+        line_buf[len - 1] = ' ';
+        line_buf[len] = '\0';
+    }
+        fprintf(script_file, "%s", line_buf);
         memset(line_buf, 0, sizeof(line_buf));
     }
+    fprintf(script_file, "\n");
+    fclose(script_file);
     close(new_fd);
     return 1;
 }

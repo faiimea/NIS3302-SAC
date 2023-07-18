@@ -155,10 +155,10 @@ void Log_SendOrRecv(int operation, char* commandname, int uid, int pid, char* bu
 	int sockfd = arg1;
 	int flags = arg2;
 	int addrlen = arg3;
-	if (ret == 0)
-		strcpy(connectresult, "success");
-	else
+	if (ret == -1)
 		strcpy(connectresult, "failed");
+	else
+		strcpy(connectresult, "success");
 
 	time_t t = time(0);
 	pwinfo = getpwuid(uid);

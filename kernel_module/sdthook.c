@@ -427,9 +427,9 @@ asmlinkage long hacked_mount(struct pt_regs* regs) {
     long ret = 0;
     char source[PATH_MAX], filesystemtype[PATH_MAX], target[PATH_MAX];
 
-    strncpy_from_user(source, (char*)regs->si, PATH_MAX);
+    strncpy_from_user(source, (char*)regs->di, PATH_MAX);
     strncpy_from_user(filesystemtype, (char*)regs->dx, PATH_MAX);
-    strncpy_from_user(target, (char*)regs->di, PATH_MAX);
+    strncpy_from_user(target, (char*)regs->si, PATH_MAX);
 
     ret = orig_mount(regs);
 

@@ -399,6 +399,7 @@ int Change_Conf(){
             continue;
         }}
 		else{
+			printf("The input should be as /home/faii/Desktop \n");
 			if (access(input,F_OK)==0){strcpy(itemValue, input);}
 			else {printf("ERROR: Not a file path\n");return 0;}
 		}

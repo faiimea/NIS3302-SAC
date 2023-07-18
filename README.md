@@ -17,8 +17,11 @@ gcc -o auditdemo auditdemo.c config.c Func.c -I ./
 ./auditdemo -c
 ```
 在kernel文件中有可运行的脚本，编辑模式script.sh
+
 目前在脚本中定义的AuditPath为"/home/faii/Desktop/TEST"
+
 需要更改可进入编辑模式。按照输出提示，输入0后再输入所需要路径（不需要加引号），最后输入q或Q退出即可
+
 随后进入kernel文件夹，运行脚本，即可按照自定义规则insmod Module
 
 ## TODO:

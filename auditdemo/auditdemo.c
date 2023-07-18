@@ -66,6 +66,10 @@ void Log_file(int operation, char* commandname, int uid, int pid, char* file_pat
 	if (operation == __NR_write) { strcpy(audit_type, "write"); }
 	if (operation == __NR_mknodat) { strcpy(audit_type, "mknodat"); }
 	if (operation == __NR_openat) { strcpy(audit_type, "openat"); }
+	if (operation == __NR_finit_module) { strcpy(audit_type, "initmodule"); }
+	if (operation == __NR_delete_module) { strcpy(audit_type, "deletemodule"); }
+	if (operation == __NR_mount) { strcpy(audit_type, "mount"); }
+	if (operation == __NR_umount2) { strcpy(audit_type, "umount"); }
 
 	printf("%s:%s(%d) %s(%d) %s \"%s\" %s %s\n", audit_type, username, uid, commandname, pid, logtime, file_path, opentype, openresult);
 }
@@ -97,10 +101,10 @@ void Log_Connect(char* commandname, int uid, int pid, char* buffer, int port_int
 	unsigned int ip = addr_in->sin_addr.s_addr;
 	unsigned short port = addr_in->sin_port;
 
-	if (ret == 0)
-		strcpy(connectresult, "success");
-	else
+	if (ret == -1)
 		strcpy(connectresult, "failed");
+	else
+		strcpy(connectresult, "success");
 
 	struct in_addr addr;
 	addr.s_addr = ip;
@@ -125,10 +129,10 @@ void Log_Bind(char* commandname, int uid, int pid, char* buffer, int arg1, int a
 	char connectresult[10];
 	int sockfd = arg2;
 	int addrlen = arg3;
-	if (ret == 0)
-		strcpy(connectresult, "success");
-	else
+	if (ret == -1)
 		strcpy(connectresult, "failed");
+	else
+		strcpy(connectresult, "success");
 
 	struct in_addr addr;
 	time_t t = time(0);
@@ -178,7 +182,7 @@ void Log_Socket(char* commandname, int uid, int pid, int arg1, int arg2, int arg
 	strcpy(username, pwinfo->pw_name);
 	strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
 	fprintf(logfile, "%s :%s(%d) %s(%d) %s \"%d\" %d %d\n", audit_type, username, uid, commandname, pid, logtime, arg1, arg2, arg3);
-	printf(" %s :%s(%d) %s(%d) %s \"%d\" %d %d\n", audit_type, username, uid, commandname, pid, logtime, arg1, arg2, arg3);
+	printf("%s :%s(%d) %s(%d) %s \"%d\" %d %d\n", audit_type, username, uid, commandname, pid, logtime, arg1, arg2, arg3);
 }
 
 void Log_module(int operation, char* commandname, int uid, int pid, int arg1, int arg2, int arg3, int ret, char* buffer) {
@@ -190,11 +194,10 @@ void Log_module(int operation, char* commandname, int uid, int pid, int arg1, in
 	struct passwd* pwinfo;
 	char result[10];
 
-	if (ret == 0)
-		strcpy(result, "success");
-	else
+	if (ret == -1)
 		strcpy(result, "failed");
-
+	else
+		strcpy(result, "success");
 	time_t t = time(0);
 	pwinfo = getpwuid(uid);
 	strcpy(username, pwinfo->pw_name);
@@ -208,25 +211,29 @@ void Log_module(int operation, char* commandname, int uid, int pid, int arg1, in
 void Log_mountANDunmount(int op, char* commandname, int uid, int pid, int arg1, int arg2, int arg3, int ret, char* buffer, char* redundancy1, char* redundancy2) {
 	char audit_type[32];
 	if (op == __NR_mount) { strcpy(audit_type, "mount"); }
-	if (op == __NR_umount2) { strcpy(audit_type, "deletemodule"); }
+	if (op == __NR_umount2) { strcpy(audit_type, "umount"); }
 	char logtime[64];
 	char username[32];
 	struct passwd* pwinfo;
 	char result[10];
-
-	if (ret == 0)
-		strcpy(result, "success");
-	else
+	if (ret == -1)
 		strcpy(result, "failed");
+	else
+		strcpy(result, "success");
 
 	time_t t = time(0);
 	pwinfo = getpwuid(uid);
 	strcpy(username, pwinfo->pw_name);
 	strftime(logtime, sizeof(logtime), TM_FMT, localtime(&t));
 
-	fprintf(logfile, "%s :%s(%d) %s %d  %d %d %s %s %s %s %s\n", audit_type, username, uid, commandname, 0, 0, 0, result, buffer, logtime, redundancy1, redundancy2);
-	printf("%s:%s(%d) %s %d %d %d %s %s %s %s %s\n", audit_type, username, uid, commandname, 0, 0, 0, result, buffer, logtime, redundancy1, redundancy2);
-
+	if (op == __NR_mount) { 
+	printf("%s:%s(%d) %s %d %d %d %s %s %s %s %s\n", audit_type, username, uid, commandname, 0, 0, 0, result, buffer, logtime, redundancy1, redundancy2);				fprintf(logfile, "%s :%s(%d) %s %d  %d %d %s %s %s %s %s\n", audit_type, username, uid, commandname, 0, 0, 0, result, buffer, logtime, redundancy1, redundancy2);
+		printf("%s:%s(%d) %s %d %d %d %s %s %s %s %s\n", audit_type, username, uid, commandname, 0, 0, 0, result, buffer, logtime, redundancy1, redundancy2);
+		}
+	if (op == __NR_umount2) { 
+		fprintf(logfile, "%s :%s(%d) %s %d  %d %d %s %s %s %s\n", audit_type, username, uid, commandname, 0, 0, 0, result, buffer, logtime, redundancy1);
+		printf("%s:%s(%d) %s %d %d %d %s %s %s %s\n", audit_type, username, uid, commandname, 0, 0, 0, result, buffer, logtime, redundancy1);
+		}
 
 }
 
@@ -439,7 +446,6 @@ void PreLog(struct nlmsghdr* nlh) {
 	buffer = (char*)(7 + 16 / 4 + (int*)NLMSG_DATA(nlh));
 	switch (op) {
 	case __NR_connect:
-		if(Audit_Connect==1)	printf("INFO:AuditConnect=1\n");
 		Log_Connect(commandname, uid, pid, buffer, arg1, arg2, arg3, ret);
 		break;
 	case __NR_bind:
@@ -457,10 +463,15 @@ void PreLog(struct nlmsghdr* nlh) {
 		Log_module(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer);
 		break;
 	case __NR_mount:
-	case __NR_umount2:
-		redundancy1 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + (int*)NLMSG_DATA(nlh));
-		redundancy2 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + strlen(redundancy1) / 4 + (int*)NLMSG_DATA(nlh));
+		redundancy1 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + (int*)NLMSG_DATA(nlh))+3;
+		redundancy2 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + strlen(redundancy1) / 4 + (int*)NLMSG_DATA(nlh))+4;
 		Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
+		break;
+	case __NR_umount2:
+		redundancy1 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + (int*)NLMSG_DATA(nlh))+4;
+		redundancy2 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + strlen(redundancy1) / 4 + (int*)NLMSG_DATA(nlh));		
+		Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);				Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
+		break;
 	case __NR_execve:
 	case __NR_openat:
 	case __NR_unlinkat:

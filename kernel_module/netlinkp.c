@@ -115,7 +115,7 @@ int AuditOpenat(struct pt_regs* regs, char* pathname, int ret)
 
     //16：表示用于存储用户ID、进程ID、regs->dx 和打开文件返回值的 4 个整数的总大小。每个整数占用 4 个字节，所以总共占用 16 个字节。
     //1：表示用于存储字符串结束符 \0 的一个字节。
-    size = strlen(pathname) + 4 + 16 + TASK_COMM_LEN + 1;
+    size = strlen(pathname) + 28 + TASK_COMM_LEN + 1;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
 
@@ -125,13 +125,13 @@ int AuditOpenat(struct pt_regs* regs, char* pathname, int ret)
     *((int*)buffer + 1) = cred->uid.val;   //uid
     *((int*)buffer + 2) = current->pid;
     *((int*)buffer + 3) = regs->dx; // regs->dx: mode for open file
-    *((int*)buffer + 4) = ret;
+    *((int*)buffer + 4) = 0;
+    *((int*)buffer + 5) = 0;
+    *((int*)buffer + 6) = ret;
 
     //最后，将commandname和fullname添加到buffer中，并调用netlink_sendmsg函数发送netlink消息。
-    strcpy((char*)(5 + (int*)buffer), commandname);
-
-    strcpy((char*)(5 + TASK_COMM_LEN / 4 + (int*)buffer), pathname);
-
+    strcpy((char*)(7 + (int*)buffer), commandname);
+    strcpy((char*)(7 + TASK_COMM_LEN / 4 + (int*)buffer), pathname);
     netlink_sendmsg(buffer, size);
     return 0;
 }
@@ -561,7 +561,7 @@ int Auditmount(char* source, char* filesystemtype, char* target, int ret) {
     const struct cred* cred;
     char commandname[TASK_COMM_LEN];
 
-    size = strlen(source) + strlen(filesystemtype) + strlen(target) + TASK_COMM_LEN + 28 + 1;
+    size = strlen(source) + strlen(filesystemtype) + strlen(target) + TASK_COMM_LEN + 28 + 6;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
 
@@ -577,8 +577,8 @@ int Auditmount(char* source, char* filesystemtype, char* target, int ret) {
     *((int*)buffer + 6) = ret;
     strcpy((char*)(7 + (int*)buffer), commandname);
     strcpy((char*)(7 + TASK_COMM_LEN / 4 + (int*)buffer), source);
-    strcpy((char*)(7 + TASK_COMM_LEN / 4 + strlen(source) / 4 + (int*)buffer), filesystemtype);
-    strcpy((char*)(7 + TASK_COMM_LEN / 4 + strlen(source) / 4 + strlen(filesystemtype) / 4 + (int*)buffer), target);
+    strcpy((char*)(7 + TASK_COMM_LEN / 4 + strlen(source) / 4 + (int*)buffer)+3, filesystemtype);
+    strcpy((char*)(7 + TASK_COMM_LEN / 4 + strlen(source) / 4 + strlen(filesystemtype) / 4 + (int*)buffer)+4, target);
 
     netlink_sendmsg(buffer, size);
     return 0;
@@ -590,7 +590,7 @@ int Auditumount(char* infofile, char* mountfile, int ret) {
     const struct cred* cred;
     char commandname[TASK_COMM_LEN];
 
-    size = strlen(mountfile) + TASK_COMM_LEN + 28 + 1;
+    size = strlen(mountfile) + TASK_COMM_LEN + 28 + 4;
     buffer = kmalloc(size, 0);
     memset(buffer, 0, size);
 
@@ -606,7 +606,7 @@ int Auditumount(char* infofile, char* mountfile, int ret) {
     *((int*)buffer + 6) = ret;
     strcpy((char*)(7 + (int*)buffer), commandname);
     strcpy((char*)(7 + TASK_COMM_LEN / 4 + (int*)buffer), infofile);
-    strcpy((char*)(7 + TASK_COMM_LEN / 4 + strlen(infofile) / 4 + (int*)buffer), mountfile);
+    strcpy((char*)(7 + TASK_COMM_LEN / 4 + strlen(infofile) / 4 + (int*)buffer)+4, mountfile);
 
     netlink_sendmsg(buffer, size);
     return 0;

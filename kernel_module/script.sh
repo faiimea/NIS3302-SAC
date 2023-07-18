@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo insmod AuditModule.ko connect=0 bind=0 sendto=0 recvfrom=0 socket=0 finit_module=1 delete_module=1 mount=0 umount2=1 execve=1 openat=1 unlinkat=1 write=1 close=1 read=1 mknodat=1 
+sudo insmod AuditModule.ko audit_connect=1 audit_bind=0 audit_sendto=1 audit_recvfrom=1 audit_socket=1 audit_finit_module=1 audit_delete_module=1 audit_mount=1 audit_umount2=1 audit_execve=1 audit_openat=1 audit_unlinkat=1 audit_write=1 audit_close=1 audit_read=1 audit_mknodat=1 

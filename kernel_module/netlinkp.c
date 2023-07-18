@@ -350,6 +350,7 @@ int AuditRead(struct pt_regs* regs, char* pathname, int ret, char* path)
     strcpy(auditpath, path);
 
     // printk("pathname: %s fullname: %s auditpath: %s", pathname, fullname, auditpath);
+
     if (strncmp(fullname, auditpath, strlen(auditpath)) != 0) return 1;
 
 

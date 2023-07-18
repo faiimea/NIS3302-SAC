@@ -18,7 +18,7 @@
 #include "global.h"
 #include "config.h"
 #include "Func.h"
-
+//#include <io.h>
 
 
 #define TM_FMT "%Y-%m-%d %H:%M:%S"
@@ -298,6 +298,7 @@ int Change_Conf(){
     char itemValue[50];
 
 	printf("\n===== 配置项列表 =====\n");
+	printf("0. audit_path\n");
 	printf("1. audit_bind\n");
 	printf("2. audit_sendto\n");
 	printf("3. audit_recvfrom\n");
@@ -329,6 +330,9 @@ int Change_Conf(){
         int itemIndex = atoi(input);
         
         switch(itemIndex){
+			case 0:
+				strcpy(itemName, "audit_path");
+				break;
             case 1:
                 strcpy(itemName, "audit_bind");
                 break;
@@ -379,8 +383,10 @@ int Change_Conf(){
                 continue;
         }
         
-        printf("请选择要设置的值 (0 或 1): ");
+        printf("Please input the value of this var ");
         scanf("%s", input);
+		if(strcmp(itemName, "audit_path")!=0){
+			printf("iterName = %s\n",itemName);
         
         if (strcmp(input, "0") == 0){
             strcpy(itemValue, "0");
@@ -391,7 +397,11 @@ int Change_Conf(){
         else{
             printf("无效的选择，请重新输入。\n");
             continue;
-        }
+        }}
+		else{
+			if (access(input,F_OK)==0){strcpy(itemValue, input);}
+			else {printf("ERROR: Not a file path\n");return 0;}
+		}
         
         // 修改配置项的值
         if (ModifyConfigItemContent(itemName, itemValue) == -1){
@@ -470,7 +480,7 @@ void PreLog(struct nlmsghdr* nlh) {
 	case __NR_umount2:
 		redundancy1 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + (int*)NLMSG_DATA(nlh))+4;
 		redundancy2 = (char*)(7 + 16 / 4 + strlen(buffer) / 4 + strlen(redundancy1) / 4 + (int*)NLMSG_DATA(nlh));		
-		Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);				Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
+		Log_mountANDunmount(op, commandname, uid, pid, arg1, arg2, arg3, ret, buffer, redundancy1, redundancy2);
 		break;
 	case __NR_execve:
 	case __NR_openat:

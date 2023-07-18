@@ -35,8 +35,8 @@ typedef void (*demo_sys_call_ptr_t)(void);
 
 typedef asmlinkage long (*sys_call_t)(struct pt_regs *regs);
 
-static char *path = "/home/test/Desktop";
-module_param(path, charp, S_IRUSR);
+static char* audit_path = "/home/faii/Desktop";
+module_param(audit_path, charp, S_IRUSR);
 
 static int audit_connect = 1;
 module_param(audit_connect, int, S_IRUSR);
@@ -191,6 +191,8 @@ asmlinkage long hacked_openat(struct pt_regs *regs)
     uid_t uid = 0;
     int index, f_type = 0;
 
+    printk("INFO now -> path = %s",audit_path);
+
     ret = orig_openat(regs);
 
     if (ret >= 0)
@@ -329,7 +331,7 @@ asmlinkage long hacked_execve(struct pt_regs *regs)
     long nbytes;
     ret = orig_execve(regs);
     nbytes = strncpy_from_user(buffer_execve, (char *)regs->di, PATH_MAX);
-    AuditExecve(regs, buffer_execve, ret, path);
+    AuditExecve(regs, buffer_execve, ret, audit_path);
     return ret;
 }
 
@@ -343,7 +345,7 @@ asmlinkage long hacked_unlinkat(struct pt_regs *regs)
     char fullname[PATH_MAX];
     get_fullname(buffer_unlink, fullname);
     ret = orig_unlinkat(regs);
-    AuditUnlinkat(regs, fullname, ret, path);
+    AuditUnlinkat(regs, fullname, ret, audit_path);
     return ret;
 }
 
@@ -375,7 +377,7 @@ asmlinkage long hacked_write(struct pt_regs *regs)
     if (buffer_write[0] == ' ')
         return ret;
     if (regs->di != 1 && regs->di != 2 && regs->di != 0)
-        AuditWrite(regs, buffer_write, ret, path);
+        AuditWrite(regs, buffer_write, ret, audit_path);
     return ret;
 }
 
@@ -401,23 +403,7 @@ asmlinkage long hacked_read(struct pt_regs *regs)
     ret = orig_read(regs);
     if (ret >= 0)
         get_info_from_fd(regs->di, &ino, &uid, &f_type, buffer_read);
-    /*
-    int index = 0;
-    while (buffer_read[index] != '\0') {
-        if (buffer_read[index] == '/') {return ret;
-            if (buffer_read[index + 1] == '.') { return ret; }
-        }
-        index++;
-    }
-    if (buffer_read[0] == ' ' )return ret;
-    */
-    /*
-    printk("path: %s \n ", buffer_read);
-    printk("fd: %lu \n ", regs->di);
-    printk("info: %s \n ", buffer);
-    printk("count is: %lu\n", count);
-    */
-    AuditRead(regs, buffer_read, ret, path);
+    AuditRead(regs, buffer_read, ret, audit_path);
     return ret;
 }
 
@@ -431,8 +417,7 @@ asmlinkage long hacked_close(struct pt_regs *regs)
     int f_type = 0;
     ret = orig_close(regs);
     get_info_from_fd(regs->di, &ino, &uid, &f_type, buffer_close);
-    if (regs->di != 1 && regs->di != 2 && regs->di != 0)
-        AuditClose(regs, buffer_close, ret, path);
+    if (regs->di != 1 && regs->di != 2 && regs->di != 0) AuditClose(regs, buffer_close, ret, audit_path);
     return ret;
 }
 
@@ -442,8 +427,8 @@ asmlinkage long hacked_mknodat(struct pt_regs *regs)
     char buffer_mknodat[PATH_MAX];
     long nbytes;
     ret = orig_mknodat(regs);
-    nbytes = strncpy_from_user(buffer_mknodat, (const char *)regs->si, PATH_MAX);
-    AuditMknodat(regs, buffer_mknodat, ret, path);
+    nbytes = strncpy_from_user(buffer_mknodat, (const char*)regs->si, PATH_MAX);
+    AuditMknodat(regs, buffer_mknodat, ret, audit_path);
     return ret;
 }
 

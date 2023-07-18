@@ -192,3 +192,4 @@ int WriteNewConfigFile(const char*pconfName)
     close(new_fd);
     return 1;
 }
+

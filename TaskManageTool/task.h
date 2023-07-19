@@ -23,7 +23,11 @@
 #include <QApplication>
 #include "api.h"
 #include <mutex>
+#include "global.h"
+#include "config.h"
+#include "Func.h"
 static sqlite3 *db;
+static bool flag=true;
 static std::mutex mu;
 struct task{
     QString Username;
@@ -57,10 +61,20 @@ void print_ip_address(unsigned int ip);
 
 void sendpid(unsigned int pid);
 
-void insert_log(char username[],char logtime[],char filepath[],char commandname[],char result[],int pid,int uid );
-void delete_log(char username[],int pid );
+void insert_log(char tablename[],char username[],char logtime[],char filepath[],char commandname[],char result[],int pid,int uid,char arg1[],char arg2[],char arg3[],char buffer[]);
+void delete_log(char username[],int id );
 void kill_func(int sig);
 static int count_callback(void* data, int n_cols, char** values, char** columns);
 static int callback_search(void *data, int argc, char **argv, char **azColName);
+
+void Log_file(int operation, char* commandname, int uid, int pid, char* file_path, int arg1, int arg2, int arg3, int ret);
+void Log_Connect(char* commandname, int uid, int pid, char* buffer, int port_int, int ip_int, int arg3, int ret) ;
+void Log_Bind(char* commandname, int uid, int pid, char* buffer, int arg1, int arg2, int arg3, int ret);
+void Log_SendOrRecv(int operation, char* commandname, int uid, int pid, char* buffer, int arg1, int arg2, int arg3, int ret);
+void Log_Socket(char* commandname, int uid, int pid, int arg1, int arg2, int arg3, int ret);
+void Log_module(int operation, char* commandname, int uid, int pid, int arg1, int arg2, int arg3, int ret, char* buffer);
+void Log_mountANDunmount(int op, char* commandname, int uid, int pid, int arg1, int arg2, int arg3, int ret, char* buffer, char* redundancy1, char* redundancy2);
+void PreLog(struct nlmsghdr* nlh);
+char* intToChar(int num);
 #endif // TASK_H
 

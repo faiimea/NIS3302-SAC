@@ -22,15 +22,15 @@ void FormAddRule::RecvAddButtonPressed(QMap<int, task> *m)
     ui->lineEditPath->clear();
     ui->dateTimeEditRemind->setDateTime(QDateTime::currentDateTime());
     ui->comboBoxRe->setCurrentIndex(0);
-    ui->comboBoxUs->setCurrentIndex(0);
+    ui->lineEditUsername->clear();
     ui->comboBoxCmd->setCurrentIndex(0);
 
 }
 
 void FormAddRule::on_pushButtonOK_clicked()
 {
-    task t;
-    QString Username =ui->comboBoxUs->currentText();
+
+    QString Username =ui->lineEditUsername->text().trimmed();
     if(Username.isEmpty())
     {
         QMessageBox::information(this, tr("check"), tr("Username cannot be empty."));
@@ -50,11 +50,17 @@ void FormAddRule::on_pushButtonOK_clicked()
 
     t.Username = Username;
     t.File_path=file_path;
-    t.LogTime=Logtime;
+    if(strcmp(t.LogTime.toUtf8().data(),"All")!=0) t.LogTime=Logtime;
     t.Result=Result;
     t.Commondname=cmdType;
 
      emit sendSearch(t);
 
+}
+
+
+void FormAddRule::on_pushButton_clicked()
+{
+    t.LogTime="All";
 }
 

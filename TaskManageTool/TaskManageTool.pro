@@ -16,10 +16,13 @@ INCLUDEPATH += .
 
 # Input
 HEADERS += api.h \
+           Func.h \
+           config.h \
            formaddrule.h \
            formchangepassword.h \
            formcreatenewuser.h \
            formmenu.h \
+           global.h \
            mainwidget.h \
            task.h
 FORMS += formaddrule.ui \
@@ -28,6 +31,8 @@ FORMS += formaddrule.ui \
          formmenu.ui \
          mainwidget.ui
 SOURCES += api.cpp \
+           Func.cpp \
+           config.cpp \
            formaddrule.cpp \
            formchangepassword.cpp \
            formcreatenewuser.cpp \
@@ -35,3 +40,6 @@ SOURCES += api.cpp \
            main.cpp \
            mainwidget.cpp \
            task.cpp
+
+DISTFILES += \
+    config.conf

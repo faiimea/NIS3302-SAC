@@ -23,9 +23,12 @@ private slots:
 
     void RecvAddButtonPressed(QMap<int, task> *m);
 
+    void on_pushButton_clicked();
+
 private:
     QMap<int, task> *mapChildPointer;
     Ui::FormAddRule *ui;
+    task t;
 };
 
 #endif // FORMADDRULE_H
